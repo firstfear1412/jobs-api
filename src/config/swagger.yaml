@@ -1,0 +1,147 @@
+openapi: 3.0.0
+info:
+  title: ๋Jobs API
+  description: Finds Jobs Project from Kasetsart University Sriracha Campus.
+  version: 0.1
+servers:
+  - url: http://localhost:3000/
+    # description: My Localhost
+paths:
+  /dashboard/topSkillByPost/{type}:
+    get:
+      summary: "Get top 5 skills by post type"
+      tags:
+        - "dashboard"
+      parameters:
+        - name: "type"
+          in: "path"
+          description: "The type of skill to fetch"
+          required: true
+          type: "string"
+      responses:
+        200:
+          description: "A list of skills with job count"
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+
+  /jobs:
+    get:
+      summary: "Get a list of jobs"
+      tags:
+        - "jobs"
+      responses:
+        200:
+          description: "A list of jobs"
+        400:
+          description: "Invalid request"
+
+components:
+  schemas:
+    basicinfo:
+      type: object
+      properties:
+        job_id:
+          type: number
+        title:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+        posted_date:
+          type: string
+          format: date-time
+        expiry_date:
+          type: string
+          format: date-time
+    classification:
+      type: object
+      properties:
+        job_id:
+          type: number
+        main_category_id:
+          type: number
+        sub_category_id:
+          type: number
+    company:
+      type: object
+      properties:
+        company_id:
+          type: number
+        name:
+          type: string
+        short_name:
+          type: string
+        industry:
+          type: string
+        verified:
+          type: number
+        company_search_url:
+          type: string
+        registration_date:
+          type: string
+          format: date-time
+        company_size:
+          type: string
+    jobs:
+      type: object
+      properties:
+        job_id:
+          type: number
+        company_id:
+          type: number
+        content:
+          type: string
+        share_link:
+          type: string
+    jobs_skill:
+      type: object
+      properties:
+        job_id:
+          type: number
+        skill_name:
+          type: string
+        skill_type:
+          type: string
+    location:
+      type: object
+      properties:
+        job_id:
+          type: number
+        area:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+    main_category:
+      type: object
+      properties:
+        main_category_id:
+          type: number
+        name:
+          type: string
+    salary:
+      type: object
+      properties:
+        job_id:
+          type: number
+        min_salary:
+          type: number
+        max_salary:
+          type: number
+        currency:
+          type: string
+        period:
+          type: string
+        has_salary_info:
+          type: number
+    sub_category:
+      type: object
+      properties:
+        sub_category_id:
+          type: number
+        name:
+          type: string
