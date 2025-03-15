@@ -6,7 +6,7 @@ export async function topSkillByPost(req, res) {
   if (req.params.type == null || req.params.type == "") {
     return res
       .status(400)
-      .json({ error: true, errormessage: "type is required" });
+      .json({ success: false, errormessage: "type is required" });
   }
   try {
     const result = await database.query({
@@ -27,12 +27,12 @@ export async function topSkillByPost(req, res) {
     if (result.rowsCount == 0) {
       return res
         .status(404)
-        .json({ error: true, errormessage: `Data not found` });
+        .json({ success: false, errormessage: `Data not found` });
     } else {
-      return res.status(200).json(result.rows);
+      return res.json({ success: true, data: result.rows });
     }
   } catch (ex) {
-    return res.status(500).json({ error: true, error: ex.message });
+    return res.status(500).json({ success: false, errormessage: ex.message });
   }
 }
 

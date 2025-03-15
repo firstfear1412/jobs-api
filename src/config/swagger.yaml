@@ -26,16 +26,58 @@ paths:
         404:
           description: "Data not found"
 
-  /jobs:
-    get:
-      summary: "Get a list of jobs"
-      tags:
-        - "jobs"
+  /job/search:
+    post:
+      summary: "Search for jobs based on filters"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                search:
+                  type: string
+                  description: "Keyword to search in company name, short name, or job title"
+                  example: "Developer"
+                location:
+                  type: string
+                  description: "Search location (city or area)"
+                  example: "Bangkok"
+                main_category:
+                  type: string
+                  nullable: true
+                  description: "Main category of the job"
+                  example: "Information & Communication Technology"
+                sub_category:
+                  type: string
+                  nullable: true
+                  description: "Sub-category of the job"
+                  example: "Developers/Programmers"
+                type:
+                  type: string
+                  nullable: true
+                  description: "Job type (e.g., Part time, Full time, Contract/Temp, Casual/Vacation)"
+                  example: "full-time"
+                min_salary:
+                  type: number
+                  format: float
+                  nullable: true
+                  description: "Minimum salary filter"
+                  example: 20000
+                max_salary:
+                  type: number
+                  format: float
+                  nullable: true
+                  description: "Maximum salary filter"
+                  example: 200000
       responses:
         200:
           description: "A list of jobs"
         400:
           description: "Invalid request"
+        404:
+          description: "Data not found"
 
 components:
   schemas:
