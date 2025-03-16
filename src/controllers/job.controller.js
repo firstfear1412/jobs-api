@@ -13,7 +13,7 @@ export async function searchJob(req, res) {
       min_salary = null,
       max_salary = null,
     } = req.body;
-
+    //#region query
     const query = `
       WITH vars AS (
         SELECT 
@@ -33,14 +33,15 @@ export async function searchJob(req, res) {
         c.company_size AS company_size,
         lo.city,
         lo.area,
+        bi.title,
+        bi.posted_date,
+        bi.type,
         csf.main_category AS main_category,
         csf.sub_category AS sub_category,
         sa.min_salary,
         sa.max_salary,
         sa.currency,
         sa.period,
-        bi.title,
-        bi.type,
         bi.status,
         content,
         CASE
@@ -54,62 +55,87 @@ export async function searchJob(req, res) {
           WHEN lo.city ILIKE '%' || vars.location || '%' THEN 2
           ELSE 3
         END AS rank_location
-      FROM jobs j
+        
+      FROM "jobs" j
       LEFT JOIN (
-        SELECT job_id, title, type, status
-        FROM basicinfo
-      ) bi ON bi.job_id = j.job_id
-      LEFT JOIN (
-        SELECT job_id, skill_name, skill_type
-        FROM jobs_skill
-      ) js ON js.job_id = j.job_id
+        SELECT job_id, title, type, status, posted_date
+        FROM "basicinfo"
+      ) bi
+      ON bi.job_id = j.job_id
       LEFT JOIN (
         SELECT job_id, main_category_id
-        FROM classification
-      ) cf ON cf.job_id = j.job_id
+        FROM "classification"
+      ) cf
+      ON cf.job_id = j.job_id
       LEFT JOIN (
         SELECT main_category_id, name
-        FROM main_category
-      ) mc ON mc.main_category_id = cf.main_category_id
+        FROM "main_category"
+      ) mc
+      ON mc.main_category_id = cf.main_category_id
       LEFT JOIN (
         SELECT *
-        FROM salary
+        FROM "salary"
         WHERE has_salary_info = 1
-      ) sa ON sa.job_id = j.job_id
+      ) sa
+      ON sa.job_id = j.job_id
       LEFT JOIN (
         SELECT job_id, area, city, country
         FROM location
-      ) lo ON lo.job_id = j.job_id
+      ) lo
+      ON lo.job_id = j.job_id
       LEFT JOIN (
         SELECT company_id, name, short_name, industry, company_size
         FROM company
-      ) c ON c.company_id = j.company_id
+      ) c
+      ON c.company_id = j.company_id
       LEFT JOIN (
         SELECT job_id, c.main_category_id, mc.name AS main_category, c.sub_category_id, sc.name AS sub_category
         FROM classification c
         INNER JOIN main_category mc ON mc.main_category_id = c.main_category_id
         INNER JOIN sub_category sc ON sc.sub_category_id = c.sub_category_id
-      ) csf ON csf.job_id = j.job_id
+      ) csf
+      ON csf.job_id = j.job_id
       CROSS JOIN vars
       WHERE 
-        (c.name ILIKE '%' || vars.search || '%'
-        OR c.short_name ILIKE '%' || vars.search || '%'
-        OR bi.title ILIKE '%' || vars.search || '%')
-      AND (
-        vars.location = '' OR
-        (lo.area IS NOT NULL AND lo.area ILIKE '%' || vars.location || '%')
-        OR (lo.city IS NOT NULL AND lo.city ILIKE '%' || vars.location || '%')
-      )
-      AND (vars.type IS NULL OR bi.type ILIKE '%' || vars.type || '%')
-      AND (
-        (vars.min_salary IS NULL OR (sa.min_salary IS NOT NULL AND sa.min_salary >= vars.min_salary )) 
-        AND 
-        (vars.max_salary IS NULL OR (sa.max_salary IS NOT NULL AND sa.max_salary <= vars.max_salary))
-      )
-      AND (vars.main_category IS NULL OR (csf.main_category IS NOT NULL AND csf.main_category ILIKE '%' || vars.main_category || '%'))
-      AND (vars.sub_category IS NULL OR (csf.sub_category IS NOT NULL AND csf.sub_category ILIKE '%' || vars.sub_category || '%'))
-      ORDER BY rank_search, rank_location, c.short_name, c.name
+        (
+          c.name ILIKE '%' || vars.search || '%'
+          OR c.short_name ILIKE '%' || vars.search || '%'
+          OR bi.title ILIKE '%' || vars.search || '%'
+        )
+        AND
+        (
+          vars.location = '' OR
+          (
+            (lo.area IS NOT NULL AND lo.area ILIKE '%' || vars.location || '%')
+            OR (lo.city IS NOT NULL AND lo.city ILIKE '%' || vars.location || '%')
+          )
+        )
+        AND (vars.type IS NULL OR bi.type ILIKE '%' || vars.type || '%')
+        AND
+        (
+          CASE 
+                WHEN vars.min_salary IS NULL AND vars.max_salary IS NULL THEN 1
+                ELSE 
+                    CASE 
+                        WHEN sa.has_salary_info = 1
+                        AND sa.min_salary IS NOT NULL AND sa.min_salary <> 0
+                        AND sa.max_salary IS NOT NULL AND sa.max_salary <> 0
+                        AND 
+                        ( 
+                            sa.min_salary <= COALESCE(vars.max_salary, sa.min_salary) 
+                            AND 
+                            sa.max_salary >= COALESCE(vars.min_salary, sa.max_salary)
+                        ) 
+                        THEN 1
+                        ELSE 0
+                    END
+            END = 1
+        )
+        AND (vars.main_category IS NULL OR (csf.main_category IS NOT NULL AND csf.main_category ILIKE '%' || vars.main_category || '%'))
+        AND (vars.sub_category IS NULL OR (csf.sub_category IS NOT NULL AND csf.sub_category ILIKE '%' || vars.sub_category || '%'))
+      ORDER BY rank_search, rank_location, bi.posted_date DESC, c.short_name, c.name
     `;
+    //#endregion query
 
     const values = [
       search,
@@ -127,7 +153,11 @@ export async function searchJob(req, res) {
         .status(404)
         .json({ success: false, errormessage: `Data not found` });
     } else {
-      return res.json({ success: true, data: result.rows });
+      return res.json({
+        success: true,
+        count: result.rows.length,
+        data: result.rows,
+      });
     }
   } catch (e) {
     console.error("Error executing searchJob query", e);

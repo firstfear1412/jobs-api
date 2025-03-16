@@ -10,7 +10,7 @@ const router = express.Router();
  * tags:
  *   - name: dashboard
  *     description: Dashboard related operations
- *   - name: jobs
+ *   - name: job
  *     description: Job related operations
  */
 
