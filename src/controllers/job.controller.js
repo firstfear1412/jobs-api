@@ -168,3 +168,104 @@ export async function searchJob(req, res) {
 //max
 
 //art
+export async function searchJobBySubcatagoryId(req, res) {
+  console.log(`GET /searchJobBySubcatagoryId is requested`);
+  console.log(req);
+
+  try {
+    const result = await database.query({
+      text: `
+        SELECT 
+          j.job_id,
+          cm.company_id,
+          cm.name AS company_name, 
+          cm.short_name,
+          cm.industry,
+          cm.company_size,
+          jl.area,
+          jl.city,
+          jl.country,
+          jb.title,
+          jb.type,
+          m.main_category_id,
+          m.name AS main_category_name,
+          s.sub_category_id,
+          s.name AS sub_category_name,
+          jsr.min_salary,
+          jsr.max_salary,
+          jsr.currency,
+          jsr.period,
+          jb.status,
+          jb.posted_date,
+          jb.expiry_date,
+          j.content,
+          
+          COALESCE(
+            '[' || STRING_AGG(
+              CASE 
+                WHEN jsk.skill_type = 'hard_skill' THEN '"' || jsk.skill_name || '"'
+              END, ', '
+            ) || ']', '[]'
+          ) AS hard_skill,
+          
+          COALESCE(
+            '[' || STRING_AGG(
+              CASE 
+                WHEN jsk.skill_type = 'soft_skill' THEN '"' || jsk.skill_name || '"'
+              END, ', '
+            ) || ']', '[]'
+          ) AS soft_skill
+        FROM jobs j
+        INNER JOIN company cm ON j.company_id = cm.company_id
+        INNER JOIN location jl ON j.job_id = jl.job_id
+        INNER JOIN basicinfo jb ON j.job_id = jb.job_id
+        INNER JOIN salary jsr ON j.job_id = jsr.job_id
+        INNER JOIN classification c ON j.job_id = c.job_id
+        INNER JOIN main_category m ON c.main_category_id = m.main_category_id
+        INNER JOIN sub_category s ON c.sub_category_id = s.sub_category_id
+        LEFT JOIN jobs_skill jsk ON j.job_id = jsk.job_id
+
+        WHERE s.sub_category_id = $1
+
+        GROUP BY 
+          j.job_id,
+          cm.company_id,
+          cm.name, 
+          cm.short_name,
+          cm.industry,
+          cm.company_size,
+          jl.area,
+          jl.city,
+          jl.country,
+          jb.title,
+          jb.type,
+          m.main_category_id,
+          m.name,
+          s.sub_category_id,
+          s.name,
+          jsr.min_salary,
+          jsr.max_salary,
+          jsr.currency,
+          jsr.period,
+          jb.status,
+          jb.posted_date,
+          jb.expiry_date,
+          j.content
+      `,
+      values: [req.params.sub_category_id]
+    });
+
+    if (result.rowCount == 0) {
+      return res.status(404).json({ success: false, errormessage: `Data not found` });
+    } else {
+      return res.json({
+        success: true,
+        count: result.rows.length,
+        data: result.rows,
+      });
+    }
+  } catch (e) {
+    console.error("Error executing searchJob query", e);
+    return res.status(500).json({ success: false, errormessage: e.message });
+  }
+}
