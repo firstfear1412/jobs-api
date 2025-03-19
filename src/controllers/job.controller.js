@@ -182,6 +182,7 @@ export async function searchJobBySubcatagoryId(req, res) {
           cm.short_name,
           cm.industry,
           cm.company_size,
+          cm.company_search_url,
           jl.area,
           jl.city,
           jl.country,
@@ -199,6 +200,7 @@ export async function searchJobBySubcatagoryId(req, res) {
           jb.posted_date,
           jb.expiry_date,
           j.content,
+          j.share_link,
           
           COALESCE(
             '[' || STRING_AGG(
@@ -234,6 +236,7 @@ export async function searchJobBySubcatagoryId(req, res) {
           cm.short_name,
           cm.industry,
           cm.company_size,
+          cm.company_search_url,
           jl.area,
           jl.city,
           jl.country,
@@ -250,18 +253,68 @@ export async function searchJobBySubcatagoryId(req, res) {
           jb.status,
           jb.posted_date,
           jb.expiry_date,
-          j.content
+          j.content,
+          j.share_link
       `,
       values: [req.params.sub_category_id]
     });
-
+    
     if (result.rowCount == 0) {
       return res.status(404).json({ success: false, errormessage: `Data not found` });
     } else {
+      let data = []
+      for (let i = 0; i < result.rows.length; i++) {
+        data.push({
+          "job_id": result.rows[i]['job_id'],
+          "basicInfo": {
+            "title": result.rows[i]['title'],
+            "type": result.rows[i]['type'],
+            "status": result.rows[i]['status'],
+            "postedDate": result.rows[i]['posted_date'],
+            "expiryDate": result.rows[i]['expiry_date']
+          },
+          "salary": {
+            "minSalary": result.rows[i]['min_salary'],
+            "maxSalary": result.rows[i]['max_salary'],
+            "currency": result.rows[i]['currency'],
+            "period": result.rows[i]['period']
+          },
+          "classification": {
+            "mainCategory": {
+              "id" : result.rows[i]['main_category_id'],
+              "name"  : result.rows[i]['main_category_name']
+            },
+            "subCategory": {
+              "id" : result.rows[i]['sub_category_id'],
+              "name"  : result.rows[i]['sub_category_name']
+            }
+          },
+          "location": {
+            "area": result.rows[i]['area'],
+            "city": result.rows[i]['city'],
+            "country": result.rows[i]['country']
+          },
+          "company": {
+            "id": result.rows[i]['company_id'],
+            "name": result.rows[i]['company_name'],
+            "shortName":result.rows[i]['short_name'],
+            "industry": result.rows[i]['industry'],
+            "size": result.rows[i]['company_size'],
+            "companySearchUrl": result.rows[i]['company_search_url']
+          },
+          "content" : result.rows[i]['content'],
+          "extractSkills" : {
+            "hardSkill" : JSON.parse(result.rows[i]['hard_skill']),
+            "softSkill" : JSON.parse(result.rows[i]['soft_skill'])
+          },
+          "shareLink" : result.rows[i]['share_link']
+        })
+      }
+      
       return res.json({
         success: true,
         count: result.rows.length,
-        data: result.rows,
+        data
       });
     }
   } catch (e) {

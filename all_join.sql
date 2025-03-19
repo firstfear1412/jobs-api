@@ -5,6 +5,7 @@ SELECT
 	cm.short_name,
 	cm.industry,
 	cm.company_size,
+	cm.company_search_url,
 	jl.area,
 	jl.city,
 	jl.country,
@@ -20,6 +21,7 @@ SELECT
 	jb.posted_date,
 	jb.expiry_date,
 	j.content,
+	j.share_link,
 	
     COALESCE(
         '[' || STRING_AGG(
@@ -55,6 +57,7 @@ GROUP BY
 	cm.short_name,
 	cm.industry,
 	cm.company_size,
+	cm.company_search_url,
 	jl.area,
 	jl.city,
 	jl.country,
@@ -69,7 +72,8 @@ GROUP BY
 	jb.status,
 	jb.posted_date,
 	jb.expiry_date,
-	j.content
+	j.content,
+	j.share_link
 ;
 
 -- "Contract/Temp"
