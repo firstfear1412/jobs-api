@@ -168,8 +168,8 @@ export async function searchJob(req, res) {
 //max
 
 //art
-export async function searchJobBySubcatagoryId(req, res) {
-  console.log(`GET /searchJobBySubcatagoryId is requested`);
+export async function fetchJobBySubcatagoryId(req, res) {
+  console.log(`GET /fetchJobBySubcatagoryId is requested`);
   console.log(req);
 
   try {
@@ -202,21 +202,17 @@ export async function searchJobBySubcatagoryId(req, res) {
           j.content,
           j.share_link,
           
-          COALESCE(
-            '[' || STRING_AGG(
-              CASE 
-                WHEN jsk.skill_type = 'hard_skill' THEN '"' || jsk.skill_name || '"'
-              END, ', '
-            ) || ']', '[]'
-          ) AS hard_skill,
-          
-          COALESCE(
-            '[' || STRING_AGG(
-              CASE 
-                WHEN jsk.skill_type = 'soft_skill' THEN '"' || jsk.skill_name || '"'
-              END, ', '
-            ) || ']', '[]'
-          ) AS soft_skill
+	        (
+            SELECT json_agg(js.skill_name) -- json_agg(row_to_json(js.skill_name)) 
+            FROM jobs_skill js 
+            WHERE js.job_id = j.job_id AND js.skill_type = 'soft_skill'
+          ) AS soft_skills,
+          (
+            SELECT json_agg(js.skill_name)
+            FROM jobs_skill js 
+            WHERE js.job_id = j.job_id AND js.skill_type = 'hard_skill'
+          ) AS hard_skills
+           
         FROM jobs j
         INNER JOIN company cm ON j.company_id = cm.company_id
         INNER JOIN location jl ON j.job_id = jl.job_id
@@ -299,15 +295,13 @@ export async function searchJobBySubcatagoryId(req, res) {
             "name": result.rows[i]['company_name'],
             "shortName":result.rows[i]['short_name'],
             "industry": result.rows[i]['industry'],
-            "size": result.rows[i]['company_size'],
-            "companySearchUrl": result.rows[i]['company_search_url']
+            "size": result.rows[i]['company_size']
           },
           "content" : result.rows[i]['content'],
           "extractSkills" : {
-            "hardSkill" : JSON.parse(result.rows[i]['hard_skill']),
-            "softSkill" : JSON.parse(result.rows[i]['soft_skill'])
+            "hardSkills" : result.rows[i]['hard_skills'],
+            "softSkills" : result.rows[i]['soft_skills']
           },
-          "shareLink" : result.rows[i]['share_link']
         })
       }
       
@@ -317,6 +311,32 @@ export async function searchJobBySubcatagoryId(req, res) {
         data
       });
     }
+  } catch (e) {
+    console.error("Error executing searchJob query", e);
+    return res.status(500).json({ success: false, errormessage: e.message });
+  }
+}
+
+
+
+export async function fetchJobByDateRange(req, res) {
+  console.log(`POST /fetchJobByDateRange is requested`);
+  // const bodyData = req.body;
+  const {
+    start,
+    end
+  } = req.body;
+  try {
+
+    console.log(start);
+    console.log(end);
+
+    return res.json({
+      success: true,
+      start,
+      end
+    });
+    
   } catch (e) {
     console.error("Error executing searchJob query", e);
     return res.status(500).json({ success: false, errormessage: e.message });
