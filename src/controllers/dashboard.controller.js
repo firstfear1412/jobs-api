@@ -268,7 +268,6 @@ export async function jobRatioByType(req, res) {
       type = req.query.type;
     }
 
-    // ปรับเปลี่ยน query ให้รองรับการส่งค่า null
     const query = `
       WITH JobCounts AS (
           SELECT 
@@ -295,7 +294,6 @@ export async function jobRatioByType(req, res) {
     } else {
       return res.json({
         success: true,
-        count: result.rows.length,
         data: result.rows,
       });
     }
@@ -347,4 +345,66 @@ export async function jobCountByDate(req, res) {
   }
 }
 
+export async function jobRatioByLocation(req, res) {
+  console.log("query", req.query);
+  console.log("query length ", Object.keys(req.query).length);
+  console.log(
+    `GET /jobRatioByLocation is requested by city=${req.query.city}`
+  );
 
+  try {
+    let city; // Full time, Contract/Temp, Contract/Temp, Part time, asual/Vacation
+
+    // ถ้า req.query เป็น {} (ไม่มีการส่งค่า query มาเลย) ให้กำหนด city เป็น null
+    if (Object.keys(req.query).length === 0) {
+      city = null;
+    }
+    // ถ้าส่งค่ามาแต่ไม่ใช่ city หรือเป็นค่าว่าง ให้โยน error
+    else if (!req.query.city || req.query.city === "") {
+      return res.status(400).json({ success: false, errormessage: "Status city is required: city is missing or empty" });
+    }
+    else {
+      city = req.query.city;
+    }
+    // WHERE ($1::VARCHAR  IS NULL OR jb.type ILIKE $1::VARCHAR)  
+    const query = `
+      WITH JobCounts AS (
+          SELECT
+              COALESCE(area, 'Unknown') AS area,  
+              COALESCE(city, 'Unknown') AS city,  
+          COALESCE(country, 'Unknown') AS country,  
+              COUNT(job_id) AS total_jobs
+          FROM location
+          WHERE ($1::VARCHAR  IS NULL OR city ILIKE $1::VARCHAR)  
+          GROUP BY area, country, city
+      )
+      SELECT 
+        area, 
+          city,
+        country,
+          total_jobs
+      FROM JobCounts
+      ORDER BY 
+      area DESC NULLS LAST, 
+      country DESC NULLS LAST, 
+      city DESC NULLS LAST;
+
+    `;
+
+    const values = [city]; 
+    const result = await database.query(query, values);    
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ success: false, errormessage: `Data not found` });
+    } else {
+      return res.json({
+        success: true,
+        data: result.rows,
+      });
+    }
+    
+  } catch (e) {
+    console.error("Error executing searchJob query", e);
+    return res.status(500).json({ success: false, errormessage: e.message });
+  }
+}

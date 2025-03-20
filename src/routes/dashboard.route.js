@@ -11,6 +11,7 @@ router.get("/jobByRangeSalary", dashboardC.jobByRangeSalary);
 // art
 router.get("/jobRatioBySubcategory", dashboardC.jobRatioBySubcategory);
 router.get("/jobRatioByType", dashboardC.jobRatioByType);
+router.get("/jobRatioBylocation", dashboardC.jobRatioByLocation);
 router.get("/jobCountByDate/:day", dashboardC.jobCountByDate);
 
 
