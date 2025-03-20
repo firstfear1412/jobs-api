@@ -404,7 +404,7 @@ export async function jobRatioByLocation(req, res) {
     }
     
   } catch (e) {
-    console.error("Error executing searchJob query", e);
+    console.error("Error executing jobRatioByLocation query", e);
     return res.status(500).json({ success: false, errormessage: e.message });
   }
 }
