@@ -125,6 +125,320 @@ paths:
         404:
           description: "Data not found"  
 
+  /dashboard/jobRatioBySubcategory:
+    get:
+      summary: Get job ratio by subcategory
+      description: Retrieve the number of jobs per subcategory, including the Grand Total if no subcategory is specified.
+      tags:
+        - dashboard
+      parameters:
+        - in: query
+          name: sub_category_id
+          required: false
+          description: The ID of the subcategory to filter jobs by. If not provided, the Grand Total is returned.
+          schema:
+            type: integer
+            example: 6287
+      responses:
+        '200':
+          description: Successfully retrieved job ratio by subcategory
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 5
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        sub_category_name:
+                          type: string
+                          example: "Software Development"
+                        total_jobs:
+                          type: integer
+                          example: 150
+        '400':
+          description: Bad request due to missing or invalid query parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  errormessage:
+                    type: string
+                    example: "Status type is required: sub_category_id is missing or empty"
+        '404':
+          description: No data found for the provided subcategory ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  errormessage:
+                    type: string
+                    example: "Data not found"
+        '500':
+          description: Internal server error when processing the request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  errormessage:
+                    type: string
+                    example: "Error executing jobRatioBySubcategory query"
+
+  /dashboard/jobRatioByType:
+    get:
+      summary: Get job ratio by job type
+      description: Retrieve the number of jobs categorized by job type (e.g., Full-time, Part-time, Contract, etc.).
+      tags:
+        - dashboard
+      parameters:
+        - in: query
+          name: type
+          required: false
+          description: The job type to filter by (e.g., Full-time, Part-time, Contract). If not provided, returns the Grand Total.
+          schema:
+            type: string
+            example: "Full time"
+      responses:
+        '200':
+          description: Successfully retrieved job ratio by type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: "Full-time"
+                        total_jobs:
+                          type: integer
+                          example: 250
+        '400':
+          description: Bad request due to missing or invalid query parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  errormessage:
+                    type: string
+                    example: "Status type is required: type is missing or empty"
+        '404':
+          description: No data found for the provided job type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  errormessage:
+                    type: string
+                    example: "Data not found"
+        '500':
+          description: Internal server error when processing the request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  errormessage:
+                    type: string
+                    example: "Error executing jobRatioByType query"
+
+  /dashboard/jobRatioByLocation:
+    get:
+      summary: Get job ratio by location
+      description: Retrieve the number of jobs categorized by city, area, and country.
+      tags:
+        - dashboard
+      parameters:
+        - in: query
+          name: city
+          required: false
+          description: The city to filter job data by. If not provided, returns job counts for all locations.
+          schema:
+            type: string
+            example: "Bangkok"
+      responses:
+        '200':
+          description: Successfully retrieved job ratio by location
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        area:
+                          type: string
+                          example: "Central"
+                        city:
+                          type: string
+                          example: "Bangkok"
+                        country:
+                          type: string
+                          example: "Thailand"
+                        total_jobs:
+                          type: integer
+                          example: 120
+        '400':
+          description: Bad request due to missing or invalid query parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  errormessage:
+                    type: string
+                    example: "Status city is required: city is missing or empty"
+        '404':
+          description: No data found for the provided city
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  errormessage:
+                    type: string
+                    example: "Data not found"
+        '500':
+          description: Internal server error when processing the request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  errormessage:
+                    type: string
+                    example: "Error executing jobRatioByLocation query"
+
+  /dashboard/jobCountByDate/{day}:
+    get:
+      summary: Get job count by date range
+      description: Retrieve the total number of job postings within the last specified number of days.
+      tags:
+        - dashboard
+      parameters:
+        - in: path
+          name: day
+          required: true
+          description: The number of past days to retrieve job count from.
+          schema:
+            type: integer
+            minimum: 1
+            example: 30
+      responses:
+        '200':
+          description: Successfully retrieved job count within the specified date range
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "The total number of job postings in the past 7 days."
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        total_jobs:
+                          type: integer
+                          example: 350
+        '400':
+          description: Bad request due to missing or invalid path parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  errormessage:
+                    type: string
+                    example: "Invalid day parameter. Please provide a valid positive number."
+        '404':
+          description: No job postings found in the specified date range
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  errormessage:
+                    type: string
+                    example: "Data not found"
+        '500':
+          description: Internal server error when processing the request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  errormessage:
+                    type: string
+                    example: "Error executing jobCountByDate query"
+
 components:
   schemas:
     basicinfo:
