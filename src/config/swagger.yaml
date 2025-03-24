@@ -34,7 +34,7 @@ paths:
         - name: "min"
           in: "query"
           description: "Minimum salary"
-          required: true
+          #required: true
           schema:
             type: "number"
             format: "float"
@@ -42,7 +42,7 @@ paths:
         - name: "max"
           in: "query"
           description: "Maximum salary"
-          required: true
+          #required: true
           schema:
             format: "float"
             nullable: true
@@ -123,7 +123,7 @@ paths:
         200:
           description: "A list of jobs"
         404:
-          description: "Data not found"  
+          description: "Data not found"
 
 components:
   schemas:
