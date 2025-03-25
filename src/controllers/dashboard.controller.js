@@ -157,6 +157,764 @@ export async function avgSalary(req, res) {
   }
 }
 //max
+export async function jobByStatus(req, res) {
+  console.log("body", req.body);
+
+  const status = req.body.status || null;
+  const limit = req.body.limit || 0;
+  const offset = req.body.offset || 0;
+  console.log(`POST /jobByStatus is requested by ${status}`);
+
+  try {
+    let query = "";
+    let values = [];
+
+    if (!status) {
+      query = `
+        SELECT
+          jb.status,
+          COUNT(*) as Total
+        FROM jobs j
+        INNER JOIN basicinfo jb ON j.job_id = jb.job_id
+        GROUP BY jb.status
+      `;
+      if (limit == 0) {
+        query += ` LIMIT $1 OFFSET $2`;
+        values = [limit, offset];
+      }
+    } else {
+      query = `
+        SELECT
+          j.job_id,
+          cm.company_id,
+          cm.name AS company_name, 
+          cm.short_name,
+          cm.industry,
+          cm.company_size,
+          cm.company_search_url,
+          jl.area,
+          jl.city,
+          jl.country,
+          jb.title,
+          jb.type,
+          m.main_category_id,
+          m.name AS main_category_name,
+          s.sub_category_id,
+          s.name AS sub_category_name,
+          jsr.min_salary,
+          jsr.max_salary,
+          jsr.currency,
+          jsr.period,
+          jb.status,
+          jb.posted_date,
+          jb.expiry_date,
+          j.content,
+          j.share_link,
+          (
+            SELECT json_agg(js.skill_name)
+            FROM jobs_skill js 
+            WHERE js.job_id = j.job_id AND js.skill_type = 'soft_skill'
+          ) AS soft_skills,
+          (
+            SELECT json_agg(js.skill_name)
+            FROM jobs_skill js 
+            WHERE js.job_id = j.job_id AND js.skill_type = 'hard_skill'
+          ) AS hard_skills
+        FROM jobs j
+        INNER JOIN company cm ON j.company_id = cm.company_id
+        INNER JOIN location jl ON j.job_id = jl.job_id
+        INNER JOIN basicinfo jb ON j.job_id = jb.job_id
+        LEFT JOIN salary jsr ON j.job_id = jsr.job_id
+        INNER JOIN classification c ON j.job_id = c.job_id
+        LEFT JOIN main_category m ON c.main_category_id = m.main_category_id
+        LEFT JOIN sub_category s ON c.sub_category_id = s.sub_category_id
+        LEFT JOIN jobs_skill jsk ON j.job_id = jsk.job_id
+        WHERE jb.status ILIKE $1
+        -- GROUP BY j.job_id, cm.company_id, cm.name, cm.short_name, cm.industry, cm.company_size, cm.company_search_url, jl.area, jl.city, jl.country, jb.title, jb.type, m.main_category_id, m.name, s.sub_category_id, s.name, jsr.min_salary, jsr.max_salary, jsr.currency, jsr.period, jb.status, jb.posted_date, jb.expiry_date, j.content, j.share_link
+      `;
+      if (limit !== 0) {
+        query += ` LIMIT $2 OFFSET $3`;
+        values = [`%${status}%`, limit, offset];
+      } else {
+        values = [`%${status}%`];
+      }
+    }
+
+    const result = await database.query(query, values);
+
+    if (result.rowCount == 0) {
+      return res.status(404).json({
+        success: false,
+        errormessage: "Data not found",
+      });
+    }
+
+    let data = [];
+    if (status) {
+      data = result.rows.map((row) => ({
+        job_id: row.job_id,
+        basicInfo: {
+          title: row.title,
+          type: row.type,
+          status: row.status,
+          postedDate: row.posted_date,
+          expiryDate: row.expiry_date,
+        },
+        salary: {
+          minSalary: row.min_salary,
+          maxSalary: row.max_salary,
+          currency: row.currency,
+          period: row.period,
+        },
+        classification: {
+          mainCategory: {
+            id: row.main_category_id,
+            name: row.main_category_name,
+          },
+          subCategory: {
+            id: row.sub_category_id,
+            name: row.sub_category_name,
+          },
+        },
+        location: {
+          area: row.area,
+          city: row.city,
+          country: row.country,
+        },
+        company: {
+          id: row.company_id,
+          name: row.company_name,
+          shortName: row.short_name,
+          industry: row.industry,
+          size: row.company_size,
+          companySearchUrl: row.company_search_url,
+        },
+        content: row.content,
+        extractSkills: {
+          hardSkill: row.hard_skills,
+          softSkill: row.soft_skills,
+        },
+        shareLink: row.share_link,
+      }));
+    } else {
+      data = result.rows; // Just return raw data if no status
+    }
+
+    return res.json({
+      success: true,
+      totalCount: result.rowCount,
+      data,
+    });
+  } catch (e) {
+    console.error("Error executing jobByStatus query", e);
+    return res.status(500).json({ success: false, errormessage: e.message });
+  }
+}
+export async function jobByMaxSalary(req, res) {
+  console.log(`POST /jobByMaxSalary is requested by `, req.body);
+  const top = req.body.top || 5;
+  const subCategoryName = req.body.subCategoryName || null;
+
+  try {
+    let values = [];
+    let query = "";
+
+    if (!subCategoryName) {
+      query = `
+      SELECT 
+        sc.sub_category_id, 
+        sc.name AS sub_category_name,
+        MAX(jsr.max_salary) AS max_salary
+      FROM sub_category sc
+      INNER JOIN classification c_inner ON sc.sub_category_id = c_inner.sub_category_id
+      INNER JOIN salary jsr ON c_inner.job_id = jsr.job_id 
+      WHERE jsr.has_salary_info = 1
+      GROUP BY sc.sub_category_id, sc.name
+      ORDER BY max_salary DESC
+      LIMIT $1;
+      `;
+      values = [top];
+    } else {
+      query = `
+      SELECT 
+        cm.company_id,
+        cm.name AS company_name, 
+        cm.short_name,
+        cm.industry,
+        cm.company_size,
+        jsr.max_salary
+      FROM sub_category sc
+      INNER JOIN classification c_inner ON sc.sub_category_id = c_inner.sub_category_id
+      INNER JOIN salary jsr ON c_inner.job_id = jsr.job_id 
+      INNER JOIN jobs j ON j.job_id = c_inner.job_id
+      INNER JOIN company cm ON j.company_id = cm.company_id
+      WHERE jsr.has_salary_info = 1 
+      AND sc."name" ILIKE '%' || $1 || '%'
+      ORDER BY jsr.max_salary DESC
+      LIMIT $2;
+      `;
+      values = [subCategoryName, top];
+    }
+
+    const result = await database.query(query, values);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        errormessage: "Data not found",
+      });
+    } else {
+      return res.status(200).json({
+        success: true,
+        count: result.rows.length,
+        data: result.rows,
+      });
+    }
+  } catch (e) {
+    console.error("Error executing jobByMaxSalary query", e);
+    return res.status(500).json({ success: false, errormessage: e.message });
+  }
+}
+
+export async function jobByMinSalary(req, res) {
+  console.log(`POST /jobByMinSalary is requested by `, req.body);
+  const top = req.body.top || 5;
+  const subCategoryName = req.body.subCategoryName || null;
+
+  try {
+    let values = [];
+    let query = "";
+
+    if (!subCategoryName) {
+      query = `
+      SELECT 
+        sc.sub_category_id, 
+        sc.name AS sub_category_name,
+        MAX(jsr.max_salary) AS max_salary
+      FROM sub_category sc
+      INNER JOIN classification c_inner ON sc.sub_category_id = c_inner.sub_category_id
+      INNER JOIN salary jsr ON c_inner.job_id = jsr.job_id 
+      WHERE jsr.has_salary_info = 1
+      GROUP BY sc.sub_category_id, sc.name
+      ORDER BY max_salary ASC
+      LIMIT $1;
+      `;
+      values = [top];
+    } else {
+      query = `
+      SELECT 
+        cm.company_id,
+        cm.name AS company_name, 
+        cm.short_name,
+        cm.industry,
+        cm.company_size,
+        jsr.max_salary
+      FROM sub_category sc
+      INNER JOIN classification c_inner ON sc.sub_category_id = c_inner.sub_category_id
+      INNER JOIN salary jsr ON c_inner.job_id = jsr.job_id 
+      INNER JOIN jobs j ON j.job_id = c_inner.job_id
+      INNER JOIN company cm ON j.company_id = cm.company_id
+      WHERE jsr.has_salary_info = 1 
+      AND sc."name" ILIKE '%' || $1 || '%'
+      ORDER BY jsr.max_salary ASC
+      LIMIT $2;
+      `;
+      values = [subCategoryName, top];
+    }
+
+    const result = await database.query(query, values);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        errormessage: "Data not found",
+      });
+    } else {
+      return res.status(200).json({
+        success: true,
+        count: result.rows.length,
+        data: result.rows,
+      });
+    }
+  } catch (e) {
+    console.error("Error executing jobByMinSalary query", e);
+    return res.status(500).json({ success: false, errormessage: e.message });
+  }
+}
+export async function jobByIndustry(req, res) {
+  const industry = req.params.industry;
+  console.log(`GET /jobByIndustry is requested by `, industry);
+
+  try {
+    let query = "";
+    let values = [];
+
+    // กรณีไม่ได้ส่ง industry มา แสดงจำนวนตาม industry
+    if (!industry) {
+      query = `
+        SELECT 
+          COALESCE(industry, 'ไม่ได้ระบุ') AS industry,
+          COUNT(*) AS total_count
+        FROM 
+          company
+        GROUP BY 
+          industry
+        ORDER BY 
+          total_count DESC
+      `;
+    }
+    // กรณีที่ต้องการดูงาน industry ที่เป็น NULL
+    else if (industry.toLowerCase() == "null") {
+      query = `
+        SELECT
+          j.job_id,
+          cm.company_id,
+          cm.name AS company_name, 
+          cm.short_name,
+          cm.industry,
+          cm.company_size,
+          cm.company_search_url,
+          jl.area,
+          jl.city,
+          jl.country,
+          jb.title,
+          jb.type,
+          m.main_category_id,
+          m.name AS main_category_name,
+          s.sub_category_id,
+          s.name AS sub_category_name,
+          jsr.min_salary,
+          jsr.max_salary,
+          jsr.currency,
+          jsr.period,
+          jb.status,
+          jb.posted_date,
+          jb.expiry_date,
+          j.content,
+          j.share_link,
+          (
+            SELECT json_agg(js.skill_name)
+            FROM jobs_skill js 
+            WHERE js.job_id = j.job_id AND js.skill_type = 'soft_skill'
+          ) AS soft_skills,
+          (
+            SELECT json_agg(js.skill_name)
+            FROM jobs_skill js 
+            WHERE js.job_id = j.job_id AND js.skill_type = 'hard_skill'
+          ) AS hard_skills
+        FROM jobs j
+        INNER JOIN company cm ON j.company_id = cm.company_id
+        INNER JOIN location jl ON j.job_id = jl.job_id
+        INNER JOIN basicinfo jb ON j.job_id = jb.job_id
+        LEFT JOIN salary jsr ON j.job_id = jsr.job_id
+        INNER JOIN classification c ON j.job_id = c.job_id
+        LEFT JOIN main_category m ON c.main_category_id = m.main_category_id
+        LEFT JOIN sub_category s ON c.sub_category_id = s.sub_category_id
+        WHERE cm.industry IS NULL
+        GROUP BY
+          j.job_id,
+          cm.company_id,
+          cm.name,
+          cm.short_name,
+          cm.industry,
+          cm.company_size,
+          cm.company_search_url,
+          jl.area,
+          jl.city,
+          jl.country,
+          jb.title,
+          jb.type,
+          m.main_category_id,
+          m.name,
+          s.sub_category_id,
+          s.name,
+          jsr.min_salary,
+          jsr.max_salary,
+          jsr.currency,
+          jsr.period,
+          jb.status,
+          jb.posted_date,
+          jb.expiry_date,
+          j.content,
+          j.share_link
+      `;
+    }
+    // กรณีที่ต้องการดูงานตาม industry ที่ไม่ได้มีค่า null
+    else {
+      query = `
+        SELECT
+          j.job_id,
+          cm.company_id,
+          cm.name AS company_name, 
+          cm.short_name,
+          cm.industry,
+          cm.company_size,
+          cm.company_search_url,
+          jl.area,
+          jl.city,
+          jl.country,
+          jb.title,
+          jb.type,
+          m.main_category_id,
+          m.name AS main_category_name,
+          s.sub_category_id,
+          s.name AS sub_category_name,
+          jsr.min_salary,
+          jsr.max_salary,
+          jsr.currency,
+          jsr.period,
+          jb.status,
+          jb.posted_date,
+          jb.expiry_date,
+          j.content,
+          j.share_link,
+          (
+            SELECT json_agg(js.skill_name)
+            FROM jobs_skill js 
+            WHERE js.job_id = j.job_id AND js.skill_type = 'soft_skill'
+          ) AS soft_skills,
+          (
+            SELECT json_agg(js.skill_name)
+            FROM jobs_skill js 
+            WHERE js.job_id = j.job_id AND js.skill_type = 'hard_skill'
+          ) AS hard_skills
+        FROM jobs j
+        INNER JOIN company cm ON j.company_id = cm.company_id
+        INNER JOIN location jl ON j.job_id = jl.job_id
+        INNER JOIN basicinfo jb ON j.job_id = jb.job_id
+        LEFT JOIN salary jsr ON j.job_id = jsr.job_id
+        INNER JOIN classification c ON j.job_id = c.job_id
+        LEFT JOIN main_category m ON c.main_category_id = m.main_category_id
+        LEFT JOIN sub_category s ON c.sub_category_id = s.sub_category_id
+        WHERE cm.industry ILIKE $1
+        GROUP BY
+          j.job_id,
+          cm.company_id,
+          cm.name,
+          cm.short_name,
+          cm.industry,
+          cm.company_size,
+          cm.company_search_url,
+          jl.area,
+          jl.city,
+          jl.country,
+          jb.title,
+          jb.type,
+          m.main_category_id,
+          m.name,
+          s.sub_category_id,
+          s.name,
+          jsr.min_salary,
+          jsr.max_salary,
+          jsr.currency,
+          jsr.period,
+          jb.status,
+          jb.posted_date,
+          jb.expiry_date,
+          j.content,
+          j.share_link`;
+      values = [`%${industry}%`];
+    }
+
+    const result = await database.query(query, values);
+
+    if (result.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ success: false, errormessage: `Data not found` });
+    }
+    let data = [];
+    if (industry) {
+      data = result.rows.map((row) => ({
+        job_id: row.job_id,
+        basicInfo: {
+          title: row.title,
+          type: row.type,
+          status: row.status,
+          postedDate: row.posted_date,
+          expiryDate: row.expiry_date,
+        },
+        salary: {
+          minSalary: row.min_salary,
+          maxSalary: row.max_salary,
+          currency: row.currency,
+          period: row.period,
+        },
+        classification: {
+          mainCategory: {
+            id: row.main_category_id,
+            name: row.main_category_name,
+          },
+          subCategory: {
+            id: row.sub_category_id,
+            name: row.sub_category_name,
+          },
+        },
+        location: {
+          area: row.area,
+          city: row.city,
+          country: row.country,
+        },
+        company: {
+          id: row.company_id,
+          name: row.company_name,
+          shortName: row.short_name,
+          industry: row.industry,
+          size: row.company_size,
+          companySearchUrl: row.company_search_url,
+        },
+        content: row.content,
+        extractSkills: {
+          hardSkill: row.hard_skills,
+          softSkill: row.soft_skills,
+        },
+        shareLink: row.share_link,
+      }));
+    } else {
+      data = result.rows; // Just return raw data if no status
+    }
+    return res.json({
+      success: true,
+      count: result.rows.length,
+      data,
+    });
+  } catch (e) {
+    console.error("Error executing jobByIndustry query", e);
+    return res.status(500).json({ success: false, errormessage: e.message });
+  }
+}
+
+export async function jobByComponySize(req, res) {
+  const componySize = req.params.componySize;
+  console.log(`GET /jobByStatus is requested by ${req.params.componySize} `);
+  try {
+    let values = [];
+    let query = "";
+
+    if (!componySize) {
+      query = `
+              SELECT COALESCE(cm.company_size,'ไม่ได้ระบุ') as company_size,
+                COUNT(j.job_id) AS total_jobs
+              FROM jobs j
+              INNER JOIN company cm ON j.company_id = cm.company_id
+              GROUP BY cm.company_size
+              ORDER BY total_jobs DESC;
+      `;
+    } else if (componySize.toLowerCase() == "null") {
+      query = `
+        SELECT
+          j.job_id,
+          cm.company_id,
+          cm.name AS company_name, 
+          cm.short_name,
+          cm.industry,
+          cm.company_size,
+          cm.company_search_url,
+          jl.area,
+          jl.city,
+          jl.country,
+          jb.title,
+          jb.type,
+          m.main_category_id,
+          m.name AS main_category_name,
+          s.sub_category_id,
+          s.name AS sub_category_name,
+          jsr.min_salary,
+          jsr.max_salary,
+          jsr.currency,
+          jsr.period,
+          jb.status,
+          jb.posted_date,
+          jb.expiry_date,
+          j.content,
+          j.share_link,
+          (
+            SELECT json_agg(js.skill_name)
+            FROM jobs_skill js 
+            WHERE js.job_id = j.job_id AND js.skill_type = 'soft_skill'
+          ) AS soft_skills,
+          (
+            SELECT json_agg(js.skill_name)
+            FROM jobs_skill js 
+            WHERE js.job_id = j.job_id AND js.skill_type = 'hard_skill'
+          ) AS hard_skills
+        FROM jobs j
+        INNER JOIN company cm ON j.company_id = cm.company_id
+        INNER JOIN location jl ON j.job_id = jl.job_id
+        INNER JOIN basicinfo jb ON j.job_id = jb.job_id
+        LEFT JOIN salary jsr ON j.job_id = jsr.job_id
+        INNER JOIN classification c ON j.job_id = c.job_id
+        LEFT JOIN main_category m ON c.main_category_id = m.main_category_id
+        LEFT JOIN sub_category s ON c.sub_category_id = s.sub_category_id
+        WHERE cm.company_size is null
+        GROUP BY
+          j.job_id,
+          cm.company_id,
+          cm.name,
+          cm.short_name,
+          cm.industry,
+          cm.company_size,
+          cm.company_search_url,
+          jl.area,
+          jl.city,
+          jl.country,
+          jb.title,
+          jb.type,
+          m.main_category_id,
+          m.name,
+          s.sub_category_id,
+          s.name,
+          jsr.min_salary,
+          jsr.max_salary,
+          jsr.currency,
+          jsr.period,
+          jb.status,
+          jb.posted_date,
+          jb.expiry_date,
+          j.content,
+          j.share_link`;
+    } else {
+      query = `SELECT
+          j.job_id,
+          cm.company_id,
+          cm.name AS company_name, 
+          cm.short_name,
+          cm.industry,
+          cm.company_size,
+          cm.company_search_url,
+          jl.area,
+          jl.city,
+          jl.country,
+          jb.title,
+          jb.type,
+          m.main_category_id,
+          m.name AS main_category_name,
+          s.sub_category_id,
+          s.name AS sub_category_name,
+          jsr.min_salary,
+          jsr.max_salary,
+          jsr.currency,
+          jsr.period,
+          jb.status,
+          jb.posted_date,
+          jb.expiry_date,
+          j.content,
+          j.share_link,
+          (
+            SELECT json_agg(js.skill_name)
+            FROM jobs_skill js 
+            WHERE js.job_id = j.job_id AND js.skill_type = 'soft_skill'
+          ) AS soft_skills,
+          (
+            SELECT json_agg(js.skill_name)
+            FROM jobs_skill js 
+            WHERE js.job_id = j.job_id AND js.skill_type = 'hard_skill'
+          ) AS hard_skills
+        FROM jobs j
+        INNER JOIN company cm ON j.company_id = cm.company_id
+        INNER JOIN location jl ON j.job_id = jl.job_id
+        INNER JOIN basicinfo jb ON j.job_id = jb.job_id
+        LEFT JOIN salary jsr ON j.job_id = jsr.job_id
+        INNER JOIN classification c ON j.job_id = c.job_id
+        LEFT JOIN main_category m ON c.main_category_id = m.main_category_id
+        LEFT JOIN sub_category s ON c.sub_category_id = s.sub_category_id
+        WHERE cm.company_size ILIKE $1
+        GROUP BY
+          j.job_id,
+          cm.company_id,
+          cm.name,
+          cm.short_name,
+          cm.industry,
+          cm.company_size,
+          cm.company_search_url,
+          jl.area,
+          jl.city,
+          jl.country,
+          jb.title,
+          jb.type,
+          m.main_category_id,
+          m.name,
+          s.sub_category_id,
+          s.name,
+          jsr.min_salary,
+          jsr.max_salary,
+          jsr.currency,
+          jsr.period,
+          jb.status,
+          jb.posted_date,
+          jb.expiry_date,
+          j.content,
+          j.share_link `;
+      values = [`%${componySize}%`];
+    }
+
+    const result = await database.query(query, values);
+    if (result.rowsCount == 0) {
+      return res
+        .status(404)
+        .json({ success: false, errormessage: `Data not found` });
+    } else {
+      let data = [];
+      if (componySize) {
+        data = result.rows.map((row) => ({
+          job_id: row.job_id,
+          basicInfo: {
+            title: row.title,
+            type: row.type,
+            status: row.status,
+            postedDate: row.posted_date,
+            expiryDate: row.expiry_date,
+          },
+          salary: {
+            minSalary: row.min_salary,
+            maxSalary: row.max_salary,
+            currency: row.currency,
+            period: row.period,
+          },
+          classification: {
+            mainCategory: {
+              id: row.main_category_id,
+              name: row.main_category_name,
+            },
+            subCategory: {
+              id: row.sub_category_id,
+              name: row.sub_category_name,
+            },
+          },
+          location: {
+            area: row.area,
+            city: row.city,
+            country: row.country,
+          },
+          company: {
+            id: row.company_id,
+            name: row.company_name,
+            shortName: row.short_name,
+            industry: row.industry,
+            size: row.company_size,
+            companySearchUrl: row.company_search_url,
+          },
+          content: row.content,
+          extractSkills: {
+            hardSkill: row.hard_skills,
+            softSkill: row.soft_skills,
+          },
+          shareLink: row.share_link,
+        }));
+      } else {
+        data = result.rows; // Just return raw data if no status
+      }
+      return res.json({
+        success: true,
+        count: result.rows.length,
+        data,
+      });
+    }
+  } catch (e) {
+    console.error("Error executing jobByComponySize query", e);
+    return res.status(500).json({ success: false, errormessage: e.message });
+  }
+}
 
 //art
 export async function jobRatioBySubcategory(req, res) {
@@ -175,6 +933,7 @@ export async function jobRatioBySubcategory(req, res) {
     }
     // ถ้าส่งค่ามาแต่ไม่ใช่ sub_category_id หรือเป็นค่าว่าง ให้โยน error
     else if (!req.query.sub_category_id || req.query.sub_category_id === "") {
+<<<<<<< HEAD
       return res.status(400).json({
         success: false,
         errormessage:
@@ -188,6 +947,25 @@ export async function jobRatioBySubcategory(req, res) {
         errormessage:
           "Status type is required: sub_category_id must be a number",
       });
+=======
+      return res
+        .status(400)
+        .json({
+          success: false,
+          errormessage:
+            "Status type is required: sub_category_id is missing or empty",
+        });
+    }
+    // ถ้าค่าที่ส่งมาไม่ใช่ตัวเลข ให้โยน error
+    else if (isNaN(req.query.sub_category_id)) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          errormessage:
+            "Status type is required: sub_category_id must be a number",
+        });
+>>>>>>> 9828fb93d60cfe94fd140b8fed16175076cc75fb
     } else {
       sub_category_id = parseInt(req.query.sub_category_id, 10);
     }
@@ -245,10 +1023,19 @@ export async function jobRatioByType(req, res) {
     }
     // ถ้าส่งค่ามาแต่ไม่ใช่ type หรือเป็นค่าว่าง ให้โยน error
     else if (!req.query.type || req.query.type === "") {
+<<<<<<< HEAD
       return res.status(400).json({
         success: false,
         errormessage: "Status type is required: type is missing or empty",
       });
+=======
+      return res
+        .status(400)
+        .json({
+          success: false,
+          errormessage: "Status type is required: type is missing or empty",
+        });
+>>>>>>> 9828fb93d60cfe94fd140b8fed16175076cc75fb
     } else {
       type = req.query.type;
     }
@@ -346,10 +1133,19 @@ export async function jobRatioByLocation(req, res) {
     }
     // ถ้าส่งค่ามาแต่ไม่ใช่ city หรือเป็นค่าว่าง ให้โยน error
     else if (!req.query.city || req.query.city === "") {
+<<<<<<< HEAD
       return res.status(400).json({
         success: false,
         errormessage: "Status city is required: city is missing or empty",
       });
+=======
+      return res
+        .status(400)
+        .json({
+          success: false,
+          errormessage: "Status city is required: city is missing or empty",
+        });
+>>>>>>> 9828fb93d60cfe94fd140b8fed16175076cc75fb
     } else {
       city = req.query.city;
     }

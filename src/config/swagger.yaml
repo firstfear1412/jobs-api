@@ -43,6 +43,136 @@ paths:
           description: "A result min, max, and average salary of max salary"
         404:
           description: "Data not found"
+  /dashboard/jobByStatus:
+    post:
+      summary: Get job information by status or count jobs if no status provided.
+      description: |
+        - If status is provided, returns detailed job information.
+        - If no status is provided (or status is null), returns the count of jobs by status.
+      tags:
+        - "dashboard"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/status"
+      responses:
+        200:
+          description: "A list of Status with job count"
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+
+  /dashboard/jobByMaxSalary:
+    post:
+      summary: Get job information with the highest salary by subcategory.
+      description: |
+        - If no subcategory name is provided, this API returns the jobs with the highest salary by subcategory.
+        - If a subcategory name is provided, it returns jobs in that subcategory with the highest salary.
+      tags:
+        - "dashboard"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/topSelectSalary"
+      responses:
+        200:
+          description: "Successful response with job data based on the maximum salary."
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+  /dashboard/jobByMinSalary:
+    post:
+      summary: "Get job information with the lowest salary by subcategory."
+      description: |
+        - If no subcategory name is provided, this API returns the jobs with the lowest salary by subcategory.
+        - If a subcategory name is provided, it returns jobs in that subcategory with the lowest salary.
+      tags:
+        - "dashboard"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/topSelectSalary"
+      responses:
+        200:
+          description: "Successful response with job data based on the minimum salary."
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+  /dashboard/jobByIndustry:
+    get:
+      summary: "Get total job by jobByIndustry"
+      tags:
+        - "dashboard"
+      responses:
+        200:
+          description: "A list of Status with job count"
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+  /dashboard/jobByIndustry/{industry}:
+    get:
+      summary: "Get job list by Industry"
+      tags:
+        - "dashboard"
+      parameters:
+        - name: industry
+          in: path
+          required: true
+          description:
+            Industry of the job. If not provided, all industries will be included.
+            If you want to filter jobs with no specified industry, set the value to `null`.
+          schema:
+            type: string
+      responses:
+        200:
+          description: "A list of jobs filtered by the industry or jobs with no specified industry"
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+  /dashboard/jobByComponySize:
+    get:
+      summary: "Get job list by Compony Size"
+      tags:
+        - "dashboard"
+      responses:
+        200:
+          description: "A list of Compony Size with job count"
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+  /dashboard/jobByComponySize/{componySize}:
+    get:
+      summary: "Get list job by compony size"
+      tags:
+        - "dashboard"
+      parameters:
+        - name: componySize
+          in: path
+          required: true
+          description:
+            Compony size of the job. If not provided, all Compony size will be included.
+            If you want to filter jobs with no specified compony size, set the value to `null`.
+          schema:
+            type: string
+      responses:
+        200:
+          description: "A list of jobs filtered by the compony size or jobs with no specified compony size"
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
   /job/search:
     post:
       summary: "Search for jobs based on filters"
@@ -448,6 +578,34 @@ components:
         expiry_date:
           type: string
           format: date-time
+    status:
+      type: object
+      properties:
+        status:
+          type: string
+          default: ""
+          nullable: true
+          description: Job status (e.g., 'active', 'expired').
+        limit:
+          type: integer
+          default: 100
+          description: The maximum number of records to retrieve. A lower limit (e.g., 50-100) is recommended to prevent system hang-ups.
+        offset:
+          type: integer
+          default: 0
+          description: The starting point for pagination.
+    topSelectSalary:
+      type: object
+      properties:
+        subCategoryName:
+          type: string
+          default: ""
+          nullable: true
+          description: Job Category Name (e.g., 'Computer Operators', 'Engineering - Network').
+        top:
+          type: integer
+          default: 5
+          description: The maximum number of records to retrieve. A lower limit (e.g., 5-100) is recommended to prevent system hang-ups.
     classification:
       type: object
       properties:
