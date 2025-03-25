@@ -15,7 +15,7 @@ paths:
       parameters:
         - name: "type"
           in: "path"
-          description: "The type of skill to fetch"
+          description: "The type of skill to fetch (e.g., 'hard_skill', 'soft_skill')"
           required: true
           type: "string"
       responses:
@@ -25,32 +25,22 @@ paths:
           description: "Invalid type parameter"
         404:
           description: "Data not found"
-  /dashboard/jobByRangeSalary:
+  /dashboard/avgSalary:
     get:
-      summary: "Get jobs by salary range"
+      summary: "Get min, max, average salary of all jobs by city"
       tags:
         - "dashboard"
       parameters:
-        - name: "min"
+        - name: "city"
           in: "query"
-          description: "Minimum salary"
-          #required: true
+          description: "city to filter job salary"
           schema:
-            type: "number"
-            format: "float"
-            nullable: true
-        - name: "max"
-          in: "query"
-          description: "Maximum salary"
-          #required: true
-          schema:
-            format: "float"
+            type: "string"
+            format: "string"
             nullable: true
       responses:
         200:
-          description: "A list of jobs"
-        400:
-          description: "Invalid salary range"
+          description: "A result min, max, and average salary of max salary"
         404:
           description: "Data not found"
   /job/search:
@@ -140,7 +130,7 @@ paths:
             type: integer
             example: 6287
       responses:
-        '200':
+        "200":
           description: Successfully retrieved job ratio by subcategory
           content:
             application/json:
@@ -164,7 +154,7 @@ paths:
                         total_jobs:
                           type: integer
                           example: 150
-        '400':
+        "400":
           description: Bad request due to missing or invalid query parameters
           content:
             application/json:
@@ -177,7 +167,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Status type is required: sub_category_id is missing or empty"
-        '404':
+        "404":
           description: No data found for the provided subcategory ID
           content:
             application/json:
@@ -190,7 +180,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Data not found"
-        '500':
+        "500":
           description: Internal server error when processing the request
           content:
             application/json:
@@ -219,7 +209,7 @@ paths:
             type: string
             example: "Full time"
       responses:
-        '200':
+        "200":
           description: Successfully retrieved job ratio by type
           content:
             application/json:
@@ -240,7 +230,7 @@ paths:
                         total_jobs:
                           type: integer
                           example: 250
-        '400':
+        "400":
           description: Bad request due to missing or invalid query parameters
           content:
             application/json:
@@ -253,7 +243,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Status type is required: type is missing or empty"
-        '404':
+        "404":
           description: No data found for the provided job type
           content:
             application/json:
@@ -266,7 +256,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Data not found"
-        '500':
+        "500":
           description: Internal server error when processing the request
           content:
             application/json:
@@ -295,7 +285,7 @@ paths:
             type: string
             example: "Bangkok"
       responses:
-        '200':
+        "200":
           description: Successfully retrieved job ratio by location
           content:
             application/json:
@@ -322,7 +312,7 @@ paths:
                         total_jobs:
                           type: integer
                           example: 120
-        '400':
+        "400":
           description: Bad request due to missing or invalid query parameters
           content:
             application/json:
@@ -335,7 +325,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Status city is required: city is missing or empty"
-        '404':
+        "404":
           description: No data found for the provided city
           content:
             application/json:
@@ -348,7 +338,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Data not found"
-        '500':
+        "500":
           description: Internal server error when processing the request
           content:
             application/json:
@@ -378,7 +368,7 @@ paths:
             minimum: 1
             example: 30
       responses:
-        '200':
+        "200":
           description: Successfully retrieved job count within the specified date range
           content:
             application/json:
@@ -399,7 +389,7 @@ paths:
                         total_jobs:
                           type: integer
                           example: 350
-        '400':
+        "400":
           description: Bad request due to missing or invalid path parameter
           content:
             application/json:
@@ -412,7 +402,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Invalid day parameter. Please provide a valid positive number."
-        '404':
+        "404":
           description: No job postings found in the specified date range
           content:
             application/json:
@@ -425,7 +415,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Data not found"
-        '500':
+        "500":
           description: Internal server error when processing the request
           content:
             application/json:

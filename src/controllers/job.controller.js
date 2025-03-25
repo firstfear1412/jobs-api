@@ -44,6 +44,16 @@ export async function searchJob(req, res) {
         sa.period,
         bi.status,
         content,
+        (
+          SELECT json_agg(js.skill_name)
+          FROM jobs_skill js 
+          WHERE js.job_id = j.job_id AND js.skill_type = 'soft_skill'
+        ) AS soft_skills,
+        (
+          SELECT json_agg(js.skill_name)
+          FROM jobs_skill js 
+          WHERE js.job_id = j.job_id AND js.skill_type = 'hard_skill'
+        ) AS hard_skills,
         CASE
           WHEN c.short_name ILIKE '%' || vars.search || '%' THEN 1
           WHEN c.name ILIKE '%' || vars.search || '%' THEN 2
@@ -252,63 +262,65 @@ export async function fetchJobBySubcatagoryId(req, res) {
           j.content,
           j.share_link
       `,
-      values: [req.params.sub_category_id]
+      values: [req.params.sub_category_id],
     });
-    
+
     if (result.rowCount == 0) {
-      return res.status(404).json({ success: false, errormessage: `Data not found` });
+      return res
+        .status(404)
+        .json({ success: false, errormessage: `Data not found` });
     } else {
-      let data = []
+      let data = [];
       for (let i = 0; i < result.rows.length; i++) {
         data.push({
-          "job_id": result.rows[i]['job_id'],
-          "basicInfo": {
-            "title": result.rows[i]['title'],
-            "type": result.rows[i]['type'],
-            "status": result.rows[i]['status'],
-            "postedDate": result.rows[i]['posted_date'],
-            "expiryDate": result.rows[i]['expiry_date']
+          job_id: result.rows[i]["job_id"],
+          basicInfo: {
+            title: result.rows[i]["title"],
+            type: result.rows[i]["type"],
+            status: result.rows[i]["status"],
+            postedDate: result.rows[i]["posted_date"],
+            expiryDate: result.rows[i]["expiry_date"],
           },
-          "salary": {
-            "minSalary": result.rows[i]['min_salary'],
-            "maxSalary": result.rows[i]['max_salary'],
-            "currency": result.rows[i]['currency'],
-            "period": result.rows[i]['period']
+          salary: {
+            minSalary: result.rows[i]["min_salary"],
+            maxSalary: result.rows[i]["max_salary"],
+            currency: result.rows[i]["currency"],
+            period: result.rows[i]["period"],
           },
-          "classification": {
-            "mainCategory": {
-              "id" : result.rows[i]['main_category_id'],
-              "name"  : result.rows[i]['main_category_name']
+          classification: {
+            mainCategory: {
+              id: result.rows[i]["main_category_id"],
+              name: result.rows[i]["main_category_name"],
             },
-            "subCategory": {
-              "id" : result.rows[i]['sub_category_id'],
-              "name"  : result.rows[i]['sub_category_name']
-            }
+            subCategory: {
+              id: result.rows[i]["sub_category_id"],
+              name: result.rows[i]["sub_category_name"],
+            },
           },
-          "location": {
-            "area": result.rows[i]['area'],
-            "city": result.rows[i]['city'],
-            "country": result.rows[i]['country']
+          location: {
+            area: result.rows[i]["area"],
+            city: result.rows[i]["city"],
+            country: result.rows[i]["country"],
           },
-          "company": {
-            "id": result.rows[i]['company_id'],
-            "name": result.rows[i]['company_name'],
-            "shortName":result.rows[i]['short_name'],
-            "industry": result.rows[i]['industry'],
-            "size": result.rows[i]['company_size']
+          company: {
+            id: result.rows[i]["company_id"],
+            name: result.rows[i]["company_name"],
+            shortName: result.rows[i]["short_name"],
+            industry: result.rows[i]["industry"],
+            size: result.rows[i]["company_size"],
           },
-          "content" : result.rows[i]['content'],
-          "extractSkills" : {
-            "hardSkills" : result.rows[i]['hard_skills'],
-            "softSkills" : result.rows[i]['soft_skills']
+          content: result.rows[i]["content"],
+          extractSkills: {
+            hardSkills: result.rows[i]["hard_skills"],
+            softSkills: result.rows[i]["soft_skills"],
           },
-        })
+        });
       }
-      
+
       return res.json({
         success: true,
         count: result.rows.length,
-        data
+        data,
       });
     }
   } catch (e) {
@@ -317,26 +329,19 @@ export async function fetchJobBySubcatagoryId(req, res) {
   }
 }
 
-
-
 export async function fetchJobByDateRange(req, res) {
   console.log(`POST /fetchJobByDateRange is requested`);
   // const bodyData = req.body;
-  const {
-    start,
-    end
-  } = req.body;
+  const { start, end } = req.body;
   try {
-
     console.log(start);
     console.log(end);
 
     return res.json({
       success: true,
       start,
-      end
+      end,
     });
-    
   } catch (e) {
     console.error("Error executing searchJob query", e);
     return res.status(500).json({ success: false, errormessage: e.message });
