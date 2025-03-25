@@ -933,7 +933,6 @@ export async function jobRatioBySubcategory(req, res) {
     }
     // ถ้าส่งค่ามาแต่ไม่ใช่ sub_category_id หรือเป็นค่าว่าง ให้โยน error
     else if (!req.query.sub_category_id || req.query.sub_category_id === "") {
-<<<<<<< HEAD
       return res.status(400).json({
         success: false,
         errormessage:
@@ -947,25 +946,6 @@ export async function jobRatioBySubcategory(req, res) {
         errormessage:
           "Status type is required: sub_category_id must be a number",
       });
-=======
-      return res
-        .status(400)
-        .json({
-          success: false,
-          errormessage:
-            "Status type is required: sub_category_id is missing or empty",
-        });
-    }
-    // ถ้าค่าที่ส่งมาไม่ใช่ตัวเลข ให้โยน error
-    else if (isNaN(req.query.sub_category_id)) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          errormessage:
-            "Status type is required: sub_category_id must be a number",
-        });
->>>>>>> 9828fb93d60cfe94fd140b8fed16175076cc75fb
     } else {
       sub_category_id = parseInt(req.query.sub_category_id, 10);
     }
@@ -1023,19 +1003,10 @@ export async function jobRatioByType(req, res) {
     }
     // ถ้าส่งค่ามาแต่ไม่ใช่ type หรือเป็นค่าว่าง ให้โยน error
     else if (!req.query.type || req.query.type === "") {
-<<<<<<< HEAD
       return res.status(400).json({
         success: false,
         errormessage: "Status type is required: type is missing or empty",
       });
-=======
-      return res
-        .status(400)
-        .json({
-          success: false,
-          errormessage: "Status type is required: type is missing or empty",
-        });
->>>>>>> 9828fb93d60cfe94fd140b8fed16175076cc75fb
     } else {
       type = req.query.type;
     }
@@ -1133,19 +1104,10 @@ export async function jobRatioByLocation(req, res) {
     }
     // ถ้าส่งค่ามาแต่ไม่ใช่ city หรือเป็นค่าว่าง ให้โยน error
     else if (!req.query.city || req.query.city === "") {
-<<<<<<< HEAD
       return res.status(400).json({
         success: false,
         errormessage: "Status city is required: city is missing or empty",
       });
-=======
-      return res
-        .status(400)
-        .json({
-          success: false,
-          errormessage: "Status city is required: city is missing or empty",
-        });
->>>>>>> 9828fb93d60cfe94fd140b8fed16175076cc75fb
     } else {
       city = req.query.city;
     }
