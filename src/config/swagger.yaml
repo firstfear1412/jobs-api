@@ -509,11 +509,11 @@ components:
           items:
             properties:
               min_salary:
-                type: float
+                type: number
               max_salary:
-                type: float
+                type: number
               avg_salary:
-                type: float
+                type: number
 
     #Art
     dashboardJobRatioBySubcategory:
