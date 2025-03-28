@@ -5,8 +5,6 @@ const router = express.Router();
 
 router.get("/topSkillByPost/:type", dashboardC.topSkillByPost);
 router.get("/avgSalary", dashboardC.avgSalary);
-// router.get("/topSkillByPost", dashboardC.topSkillByPost);
-// router.post("/", dashboardC.createUser);
 
 //max
 router.post("/jobByStatus", dashboardC.jobByStatus);
