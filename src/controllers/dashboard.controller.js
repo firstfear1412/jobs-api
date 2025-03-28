@@ -1111,7 +1111,7 @@ export async function jobRatioByLocation(req, res) {
   console.log(`GET /jobRatioByLocation is requested by city=${req.query.city}`);
 
   try {
-    let city; // Full time, Contract/Temp, Contract/Temp, Part time, asual/Vacation
+    let city; // Full time, Contract/Temp, Part time, Casual/Vacation
 
     // ถ้า req.query เป็น {} (ไม่มีการส่งค่า query มาเลย) ให้กำหนด city เป็น null
     if (Object.keys(req.query).length === 0) {
