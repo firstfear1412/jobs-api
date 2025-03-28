@@ -36,8 +36,8 @@ export async function topSkillByPost(req, res) {
       );
       return res.json({
         success: true,
-        count: result.rows.length,
-        sumJobCount: sumJobCount,
+        countObj: result.rows.length,
+        total: sumJobCount,
         data: result.rows,
       });
     }
@@ -147,7 +147,8 @@ export async function avgSalary(req, res) {
     } else {
       return res.json({
         success: true,
-        count: result.rows.length,
+        countObj: result.rows.length,
+        // total: total,
         data: result.rows,
       });
     }

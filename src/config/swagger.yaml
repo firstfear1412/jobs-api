@@ -24,10 +24,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  # อ้างอิงไปที่ Component เพื่อแสดงรายละเอียด
-                  $ref: "#/components/schemas/dashboardTopSkill"
+                # อ้างอิงไปที่ Component เพื่อแสดงรายละเอียด
+                $ref: "#/components/schemas/dashboardTopSkill"
         400:
           description: "Invalid type parameter"
         404:
@@ -48,6 +46,11 @@ paths:
       responses:
         200:
           description: "A result min, max, and average salary of max salary"
+          content:
+            application/json:
+              schema:
+                # อ้างอิงไปที่ Component เพื่อแสดงรายละเอียด
+                $ref: "#/components/schemas/dashboardAvgSalary"
         404:
           description: "Data not found"
   /dashboard/jobByStatus:
@@ -286,7 +289,7 @@ paths:
   /dashboard/jobRatioByType:
     get:
       summary: Get job ratio by job type
-      description: Retrieve the number of jobs categorized by job type (e.g., Full time, Contract/Temp, Contract/Temp, Part time, Casual/Vacation, etc.). 
+      description: Retrieve the number of jobs categorized by job type (e.g., Full time, Contract/Temp, Contract/Temp, Part time, Casual/Vacation, etc.).
       tags:
         - dashboard
       parameters:
@@ -489,12 +492,29 @@ components:
         - type: object
       properties:
         data:
-          type: object
-          properties:
-            skill_name:
-              type: string
-            sumJobCount:
-              type: number
+          type: array
+          items:
+            properties:
+              skill_name:
+                type: string
+              job_count:
+                type: integer
+    dashboardAvgSalary:
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
+      properties:
+        data:
+          type: array
+          items:
+            properties:
+              min_salary:
+                type: float
+              max_salary:
+                type: float
+              avg_salary:
+                type: float
+
     #Art
     dashboardJobRatioBySubcategory:
       allOf:
@@ -549,12 +569,10 @@ components:
           type: boolean
         message:
           type: string
-        data: 
+        data:
           type: array
           items:
             properties:
               total_jobs:
                 type: integer
-        
-      
 #Max
