@@ -849,7 +849,7 @@ export async function jobBycompanySize(req, res) {
     }
 
     const result = await database.query(query, values);
-    if (result.rowsCount == 0) {
+    if (result.rows.length == 0) {
       return res
         .status(404)
         .json({ success: false, errormessage: `Data not found` });
