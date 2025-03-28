@@ -1136,7 +1136,7 @@ export async function jobRatioByLocation(req, res) {
               -- COUNT(job_id) AS total_jobs
               COUNT(job_id)::INTEGER AS total_jobs
           FROM location
-          WHERE ($1::VARCHAR  IS NULL OR city ILIKE $1::VARCHAR)  
+          WHERE ($1::VARCHAR  IS NULL OR city ILIKE CONCAT('%', $1::VARCHAR, '%'))
           GROUP BY area, country, city
       )
       SELECT 
