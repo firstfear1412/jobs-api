@@ -66,15 +66,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/jobByStatus"
+              $ref: "#/components/requestBodies/dashboardJobByStatus"
       responses:
         200:
-          description: "A list of Status with job count"
+          description: A successful response that provides a list of jobs filtered by the provided status, or, if no status is provided (or the status is null), returns the count of jobs grouped by their status. The response will include detailed job information or just the job count, depending on the provided parameters.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/dashboardjobListResponse"
+                  - $ref: "#/components/schemas/dashboardJobByStatusResponse"
         400:
           description: "Invalid type parameter"
         404:
           description: "Data not found"
-
   /dashboard/jobByMaxSalary:
     post:
       summary: Get job information with the highest salary by subcategory.
@@ -88,10 +93,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/jobByMaxSalaryNjobByMinSalary"
+              $ref: "#/components/requestBodies/dashboardJobBySalary"
       responses:
         200:
           description: "Successful response with job data based on the maximum salary."
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/dashboardjobByMaxSalary"
+                  - $ref: "#/components/schemas/dashboardCompanyListJobByMaxSalaryResponse"
         400:
           description: "Invalid type parameter"
         404:
@@ -109,22 +120,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/jobByMaxSalaryNjobByMinSalary"
+              $ref: "#/components/requestBodies/dashboardJobBySalary"
       responses:
         200:
           description: "Successful response with job data based on the minimum salary."
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/dashboardjobByMinSalary"
+                  - $ref: "#/components/schemas/dashboardCompanyListJobMinSalaryResponse"
         400:
           description: "Invalid type parameter"
         404:
           description: "Data not found"
   /dashboard/jobByIndustry:
     get:
-      summary: "Get job count by industry"
+      summary: "Get job information by Industry or count jobs if no industry provided."
       tags:
         - "dashboard"
       responses:
         200:
           description: "A list of Status with job count"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dashboardjobByIndustry"
         400:
           description: "Invalid type parameter"
         404:
@@ -135,10 +156,21 @@ paths:
       tags:
         - "dashboard"
       parameters:
-        - $ref: "#/components/schemas/jobByIndustry"
+        - name: industry
+          in: path
+          required: true
+          schema:
+          type: string
+          description: |
+            Industry of the job. If not provided, all industries will be included.
+            If you want to filter jobs with no specified industry, set the value to `null`.
       responses:
         200:
           description: "A list of jobs filtered by the industry or jobs with no specified industry"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dashboardjobListResponse"
         400:
           description: "Invalid type parameter"
         404:
@@ -150,7 +182,11 @@ paths:
         - "dashboard"
       responses:
         200:
-          description: "A list of Compony Size with job count"
+          description: "A list of jobs filtered by the company size or jobs with no specified company size"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dashboardjobByCompanySize"
         400:
           description: "Invalid type parameter"
         404:
@@ -161,10 +197,21 @@ paths:
       tags:
         - "dashboard"
       parameters:
-        - $ref: "#/components/schemas/jobByCompanySize"
+        - name: companySize
+          in: path
+          required: true
+          schema:
+          type: string
+          description: |
+            Company size of the job. If not provided, all company sizes will be included.
+            If you want to filter jobs with no specified company size, set the value to `null`.
       responses:
         200:
           description: "A list of jobs filtered by the compony size or jobs with no specified compony size"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/dashboardjobListResponse"
         400:
           description: "Invalid type parameter"
         404:
@@ -454,6 +501,105 @@ components:
         total:
           type: number
           nullable: true
+    jobListResponse:
+      type: object
+      properties:
+        job_id:
+          type: integer
+          description: The unique identifier of the job
+        basicInfo:
+          type: object
+          properties:
+            title:
+              type: string
+            type:
+              type: string
+            status:
+              type: string
+            postedDate:
+              type: string
+              format: date-time
+            expiryDate:
+              type: string
+              format: date-time
+        salary:
+          type: object
+          properties:
+            minSalary:
+              type: integer
+              nullable: true
+            maxSalary:
+              type: integer
+              nullable: true
+            currency:
+              type: string
+              nullable: true
+            period:
+              type: string
+              nullable: true
+        classification:
+          type: object
+          properties:
+            mainCategory:
+              type: object
+              properties:
+                id:
+                  type: integer
+                name:
+                  type: string
+            subCategory:
+              type: object
+              properties:
+                id:
+                  type: integer
+                name:
+                  type: string
+        location:
+          type: object
+          properties:
+            area:
+              type: string
+              nullable: true
+            city:
+              type: string
+            country:
+              type: string
+        company:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            shortName:
+              type: string
+              nullable: true
+            industry:
+              type: string
+              nullable: true
+            size:
+              type: string
+              nullable: true
+            companySearchUrl:
+              type: string
+              format: uri
+        content:
+          type: string
+        extractSkills:
+          type: object
+          properties:
+            hardSkill:
+              type: array
+              items:
+                type: string
+            softSkill:
+              type: array
+              items:
+                type: string
+        shareLink:
+          type: string
+          format: uri
+
     #Ter
     jobSearch:
       allOf:
@@ -670,4 +816,145 @@ components:
             properties:
               total_jobs:
                 type: integer
-#Max
+    #Max
+    dashboardjobByCompanySize:
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              company_size:
+                type: string
+                description: "The company size (e.g., 5,001-10,000 employees)"
+              total:
+                type: integer
+                description: "The total number of jobs available for that company size"
+    dashboardjobByIndustry:
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              industry:
+                type: string
+                description: "The company size (e.g., 5,001-10,000 employees)"
+              total:
+                type: integer
+                description: "The total number of jobs available for that company size"
+    dashboardjobByMaxSalary:
+      type: object
+      properties:
+        sub_category_id:
+          type: integer
+        sub_category_name:
+          type: string
+        max_salary:
+          type: string
+
+    dashboardCompanyListJobByMaxSalaryResponse:
+      type: object
+      properties:
+        company_id:
+          type: integer
+        company_name:
+          type: string
+        short_name:
+          type: string
+        industry:
+          type: string
+        company_size:
+          type: string
+        max_salary:
+          type: string
+    dashboardjobByMinSalary:
+      type: object
+      properties:
+        sub_category_id:
+          type: integer
+        sub_category_name:
+          type: string
+        min_salary:
+          type: string
+
+    dashboardCompanyListJobMinSalaryResponse:
+      type: object
+      properties:
+        company_id:
+          type: integer
+        company_name:
+          type: string
+        short_name:
+          type: string
+        industry:
+          type: string
+        company_size:
+          type: string
+        job_name:
+          type: string
+        min_salary:
+          type: string
+    dashboardjobListResponse:
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/jobListResponse"
+    dashboardJobByStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        countObj:
+          type: integer
+        total:
+          type: integer
+          nullable: true
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+              total:
+                type: integer
+  requestBodies:
+    dashboardJobByStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          default: ""
+          nullable: true
+          description: Job status (e.g., 'active', 'expired').
+        limit:
+          type: integer
+          default: 100
+          description: The maximum number of records to retrieve. A lower limit (e.g., 50-100) is recommended to prevent system hang-ups.
+        offset:
+          type: integer
+          default: 0
+          description: The starting point for pagination.
+    dashboardJobBySalary:
+      type: object
+      properties:
+        subCategoryName:
+          type: string
+          default: ""
+          nullable: true
+          description: Job Category Name (e.g., 'Computer Operators', 'Engineering - Network').
+        top:
+          type: integer
+          default: 5
+          description: The maximum number of records to retrieve. A lower limit (e.g., 5-100) is recommended to prevent system hang-ups.

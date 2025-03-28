@@ -174,7 +174,7 @@ export async function jobByStatus(req, res) {
       query = `
         SELECT
           jb.status,
-          COUNT(*) as Total
+          COUNT(*)::INTEGER as total
         FROM jobs j
         INNER JOIN basicinfo jb ON j.job_id = jb.job_id
         GROUP BY jb.status
@@ -202,8 +202,8 @@ export async function jobByStatus(req, res) {
           m.name AS main_category_name,
           s.sub_category_id,
           s.name AS sub_category_name,
-          jsr.min_salary,
-          jsr.max_salary,
+          jsr.min_salary::DECIMAL,
+          jsr.max_salary::DECIMAL,
           jsr.currency,
           jsr.period,
           jb.status,
@@ -298,12 +298,24 @@ export async function jobByStatus(req, res) {
     } else {
       data = result.rows; // Just return raw data if no status
     }
-
-    return res.json({
-      success: true,
-      totalCount: result.rowCount,
-      data,
-    });
+    const total = result.rows.reduce(
+      (sum, row) => sum + parseInt(row.total || 0, 10),
+      0
+    );
+    if (total > 0) {
+      return res.json({
+        success: true,
+        countObj: result.rowCount,
+        total,
+        data,
+      });
+    } else {
+      return res.json({
+        success: true,
+        countObj: result.rowCount,
+        data,
+      });
+    }
   } catch (e) {
     console.error("Error executing jobByStatus query", e);
     return res.status(500).json({ success: false, errormessage: e.message });
@@ -323,7 +335,7 @@ export async function jobByMaxSalary(req, res) {
       SELECT 
         sc.sub_category_id, 
         sc.name AS sub_category_name,
-        MAX(jsr.max_salary) AS max_salary
+        MAX(jsr.max_salary)::DECIMAL AS max_salary
       FROM sub_category sc
       INNER JOIN classification c_inner ON sc.sub_category_id = c_inner.sub_category_id
       INNER JOIN salary jsr ON c_inner.job_id = jsr.job_id 
@@ -335,24 +347,32 @@ export async function jobByMaxSalary(req, res) {
       values = [top];
     } else {
       query = `
-      SELECT 
-        cm.company_id,
-        cm.name AS company_name, 
-        cm.short_name,
-        cm.industry,
-        cm.company_size,
-        jsr.max_salary
-      FROM sub_category sc
-      INNER JOIN classification c_inner ON sc.sub_category_id = c_inner.sub_category_id
-      INNER JOIN salary jsr ON c_inner.job_id = jsr.job_id 
-      INNER JOIN jobs j ON j.job_id = c_inner.job_id
-      INNER JOIN company cm ON j.company_id = cm.company_id
-      WHERE jsr.has_salary_info = 1 
-      AND sc."name" ILIKE '%' || $1 || '%'
-      ORDER BY jsr.max_salary DESC
-      LIMIT $2;
+          SELECT
+              cm.company_id,
+              cm.name AS company_name, 
+              cm.short_name,
+              cm.industry,
+              cm.company_size,
+              MAX(jsr.max_salary)::DECIMAL AS max_salary
+          FROM sub_category sc
+          INNER JOIN classification c_inner ON sc.sub_category_id = c_inner.sub_category_id
+          INNER JOIN salary jsr ON c_inner.job_id = jsr.job_id 
+          INNER JOIN jobs j ON j.job_id = c_inner.job_id
+          INNER JOIN company cm ON j.company_id = cm.company_id
+          WHERE jsr.has_salary_info = 1 
+          AND sc."name" ILIKE  $1 
+          GROUP BY  
+              cm.company_id, 
+              cm.name, 
+              cm.short_name, 
+              cm.industry,
+              sc."name" ,
+              jsr.max_salary, 
+              cm.company_size
+          ORDER BY max_salary DESC
+          LIMIT $2;
       `;
-      values = [subCategoryName, top];
+      values = [`%${subCategoryName}%`, top];
     }
 
     const result = await database.query(query, values);
@@ -365,7 +385,7 @@ export async function jobByMaxSalary(req, res) {
     } else {
       return res.status(200).json({
         success: true,
-        count: result.rows.length,
+        countObj: result.rows.length,
         data: result.rows,
       });
     }
@@ -389,13 +409,13 @@ export async function jobByMinSalary(req, res) {
       SELECT 
         sc.sub_category_id, 
         sc.name AS sub_category_name,
-        MAX(jsr.max_salary) AS max_salary
+        MIN(jsr.min_salary)::DECIMAL AS min_salary
       FROM sub_category sc
       INNER JOIN classification c_inner ON sc.sub_category_id = c_inner.sub_category_id
       INNER JOIN salary jsr ON c_inner.job_id = jsr.job_id 
-      WHERE jsr.has_salary_info = 1
+      WHERE jsr.has_salary_info = 1 AND jsr.currency LIKE 'THB' AND jsr."period" LIKE 'monthly'
       GROUP BY sc.sub_category_id, sc.name
-      ORDER BY max_salary ASC
+      ORDER BY min_salary ASC
       LIMIT $1;
       `;
       values = [top];
@@ -407,15 +427,24 @@ export async function jobByMinSalary(req, res) {
         cm.short_name,
         cm.industry,
         cm.company_size,
-        jsr.max_salary
+        sc."name" AS job_name,
+        jsr.min_salary ::DECIMAL
       FROM sub_category sc
       INNER JOIN classification c_inner ON sc.sub_category_id = c_inner.sub_category_id
       INNER JOIN salary jsr ON c_inner.job_id = jsr.job_id 
       INNER JOIN jobs j ON j.job_id = c_inner.job_id
       INNER JOIN company cm ON j.company_id = cm.company_id
       WHERE jsr.has_salary_info = 1 
-      AND sc."name" ILIKE '%' || $1 || '%'
-      ORDER BY jsr.max_salary ASC
+      AND sc."name" ILIKE '%' || $1 || '%' AND jsr.currency LIKE 'THB' AND jsr."period" LIKE 'monthly'
+      GROUP BY  
+              cm.company_id, 
+              cm.name, 
+              cm.short_name, 
+              cm.industry,
+              sc."name" ,
+              jsr.min_salary, 
+              cm.company_size
+      ORDER BY jsr.min_salary ASC
       LIMIT $2;
       `;
       values = [subCategoryName, top];
@@ -431,7 +460,7 @@ export async function jobByMinSalary(req, res) {
     } else {
       return res.status(200).json({
         success: true,
-        count: result.rows.length,
+        countObj: result.rows.length,
         data: result.rows,
       });
     }
@@ -453,13 +482,13 @@ export async function jobByIndustry(req, res) {
       query = `
         SELECT 
           COALESCE(industry, 'ไม่ได้ระบุ') AS industry,
-          COUNT(*) AS total_count
+          COUNT(*)::INTEGER AS total
         FROM 
           company
         GROUP BY 
           industry
         ORDER BY 
-          total_count DESC
+          total DESC
       `;
     }
     // กรณีที่ต้องการดูงาน industry ที่เป็น NULL
@@ -482,8 +511,8 @@ export async function jobByIndustry(req, res) {
           m.name AS main_category_name,
           s.sub_category_id,
           s.name AS sub_category_name,
-          jsr.min_salary,
-          jsr.max_salary,
+          jsr.min_salary::DECIMAL,
+          jsr.max_salary::DECIMAL,
           jsr.currency,
           jsr.period,
           jb.status,
@@ -507,8 +536,8 @@ export async function jobByIndustry(req, res) {
         INNER JOIN basicinfo jb ON j.job_id = jb.job_id
         LEFT JOIN salary jsr ON j.job_id = jsr.job_id
         INNER JOIN classification c ON j.job_id = c.job_id
-        LEFT JOIN main_category m ON c.main_category_id = m.main_category_id
-        LEFT JOIN sub_category s ON c.sub_category_id = s.sub_category_id
+        INNER JOIN main_category m ON c.main_category_id = m.main_category_id
+        INNER JOIN sub_category s ON c.sub_category_id = s.sub_category_id
         WHERE cm.industry IS NULL
         GROUP BY
           j.job_id,
@@ -581,10 +610,10 @@ export async function jobByIndustry(req, res) {
         INNER JOIN company cm ON j.company_id = cm.company_id
         INNER JOIN location jl ON j.job_id = jl.job_id
         INNER JOIN basicinfo jb ON j.job_id = jb.job_id
-        LEFT JOIN salary jsr ON j.job_id = jsr.job_id
+        INNER JOIN salary jsr ON j.job_id = jsr.job_id
         INNER JOIN classification c ON j.job_id = c.job_id
-        LEFT JOIN main_category m ON c.main_category_id = m.main_category_id
-        LEFT JOIN sub_category s ON c.sub_category_id = s.sub_category_id
+        INNER JOIN main_category m ON c.main_category_id = m.main_category_id
+        INNER JOIN sub_category s ON c.sub_category_id = s.sub_category_id
         WHERE cm.industry ILIKE $1
         GROUP BY
           j.job_id,
@@ -672,9 +701,22 @@ export async function jobByIndustry(req, res) {
     } else {
       data = result.rows; // Just return raw data if no status
     }
+
+    const total = result.rows.reduce(
+      (sum, row) => sum + parseInt(row.total || 0, 10),
+      0
+    );
+    if (total) {
+      return res.json({
+        success: true,
+        countObj: result.rows.length,
+        total,
+        data,
+      });
+    }
     return res.json({
       success: true,
-      count: result.rows.length,
+      countObj: result.rows.length,
       data,
     });
   } catch (e) {
@@ -692,12 +734,12 @@ export async function jobBycompanySize(req, res) {
 
     if (!companySize) {
       query = `
-              SELECT COALESCE(cm.company_size,'ไม่ได้ระบุ') as company_size,
-                COUNT(j.job_id) AS total_jobs
+              SELECT COALESCE(cm.company_size,'Null') as company_size,
+                COUNT(j.job_id)::INTEGER AS total
               FROM jobs j
               INNER JOIN company cm ON j.company_id = cm.company_id
               GROUP BY cm.company_size
-              ORDER BY total_jobs DESC;
+              ORDER BY total DESC;
       `;
     } else if (companySize.toLowerCase() == "null") {
       query = `
@@ -718,8 +760,8 @@ export async function jobBycompanySize(req, res) {
           m.name AS main_category_name,
           s.sub_category_id,
           s.name AS sub_category_name,
-          jsr.min_salary,
-          jsr.max_salary,
+          jsr.min_salary::DECIMAL,
+          jsr.max_salary::DECIMAL,
           jsr.currency,
           jsr.period,
           jb.status,
@@ -903,18 +945,30 @@ export async function jobBycompanySize(req, res) {
       } else {
         data = result.rows; // Just return raw data if no status
       }
-      return res.json({
-        success: true,
-        count: result.rows.length,
-        data,
-      });
+      const total = result.rows.reduce(
+        (sum, row) => sum + parseInt(row.total_jobs || 0, 10),
+        0
+      );
+      if (total) {
+        return res.json({
+          success: true,
+          countObj: result.rows.length,
+          total,
+          data,
+        });
+      } else {
+        return res.json({
+          success: true,
+          countObj: result.rows.length,
+          data,
+        });
+      }
     }
   } catch (e) {
     console.error("Error executing jobBycompanySize query", e);
     return res.status(500).json({ success: false, errormessage: e.message });
   }
 }
-
 //art
 export async function jobRatioBySubcategory(req, res) {
   console.log("query", req.query);
