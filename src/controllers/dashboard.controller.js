@@ -684,14 +684,14 @@ export async function jobByIndustry(req, res) {
   }
 }
 
-export async function jobByComponySize(req, res) {
-  const componySize = req.params.componySize;
-  console.log(`GET /jobByStatus is requested by ${req.params.componySize} `);
+export async function jobBycompanySize(req, res) {
+  const companySize = req.params.companySize;
+  console.log(`GET /jobBycompanySize is requested by `,companySize);
   try {
     let values = [];
     let query = "";
 
-    if (!componySize) {
+    if (!companySize) {
       query = `
               SELECT COALESCE(cm.company_size,'ไม่ได้ระบุ') as company_size,
                 COUNT(j.job_id) AS total_jobs
@@ -700,7 +700,7 @@ export async function jobByComponySize(req, res) {
               GROUP BY cm.company_size
               ORDER BY total_jobs DESC;
       `;
-    } else if (componySize.toLowerCase() == "null") {
+    } else if (companySize.toLowerCase() == "null") {
       query = `
         SELECT
           j.job_id,
@@ -845,7 +845,7 @@ export async function jobByComponySize(req, res) {
           jb.expiry_date,
           j.content,
           j.share_link `;
-      values = [`%${componySize}%`];
+      values = [`%${companySize}%`];
     }
 
     const result = await database.query(query, values);
@@ -855,7 +855,7 @@ export async function jobByComponySize(req, res) {
         .json({ success: false, errormessage: `Data not found` });
     } else {
       let data = [];
-      if (componySize) {
+      if (companySize) {
         data = result.rows.map((row) => ({
           job_id: row.job_id,
           basicInfo: {
@@ -911,7 +911,7 @@ export async function jobByComponySize(req, res) {
       });
     }
   } catch (e) {
-    console.error("Error executing jobByComponySize query", e);
+    console.error("Error executing jobBycompanySize query", e);
     return res.status(500).json({ success: false, errormessage: e.message });
   }
 }
