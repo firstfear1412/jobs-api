@@ -228,9 +228,7 @@ export async function jobByStatus(req, res) {
         INNER JOIN classification c ON j.job_id = c.job_id
         LEFT JOIN main_category m ON c.main_category_id = m.main_category_id
         LEFT JOIN sub_category s ON c.sub_category_id = s.sub_category_id
-        LEFT JOIN jobs_skill jsk ON j.job_id = jsk.job_id
         WHERE jb.status ILIKE $1
-        -- GROUP BY j.job_id, cm.company_id, cm.name, cm.short_name, cm.industry, cm.company_size, cm.company_search_url, jl.area, jl.city, jl.country, jb.title, jb.type, m.main_category_id, m.name, s.sub_category_id, s.name, jsr.min_salary, jsr.max_salary, jsr.currency, jsr.period, jb.status, jb.posted_date, jb.expiry_date, j.content, j.share_link
       `;
       if (limit !== 0) {
         query += ` LIMIT $2 OFFSET $3`;
@@ -686,7 +684,7 @@ export async function jobByIndustry(req, res) {
 
 export async function jobBycompanySize(req, res) {
   const companySize = req.params.companySize;
-  console.log(`GET /jobBycompanySize is requested by `,companySize);
+  console.log(`GET /jobBycompanySize is requested by `, companySize);
   try {
     let values = [];
     let query = "";
