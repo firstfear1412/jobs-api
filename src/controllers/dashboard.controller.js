@@ -192,51 +192,67 @@ export async function jobRatioBySubcategory(req, res) {
 
   try {
     let sub_category_id;
-    
+
     // ถ้า req.query เป็น {} (ไม่มีการส่งค่า query มาเลย) ให้กำหนด sub_category_id เป็น null
     if (Object.keys(req.query).length === 0) {
       sub_category_id = null;
     }
     // ถ้าส่งค่ามาแต่ไม่ใช่ sub_category_id หรือเป็นค่าว่าง ให้โยน error
     else if (!req.query.sub_category_id || req.query.sub_category_id === "") {
-      return res.status(400).json({ success: false, errormessage: "Status type is required: sub_category_id is missing or empty" });
+      return res.status(400).json({
+        success: false,
+        errormessage:
+          "Status type is required: sub_category_id is missing or empty",
+      });
     }
     // ถ้าค่าที่ส่งมาไม่ใช่ตัวเลข ให้โยน error
     else if (isNaN(req.query.sub_category_id)) {
-      return res.status(400).json({ success: false, errormessage: "Status type is required: sub_category_id must be a number" });
-    }
-    else {
+      return res.status(400).json({
+        success: false,
+        errormessage:
+          "Status type is required: sub_category_id must be a number",
+      });
+    } else {
       sub_category_id = parseInt(req.query.sub_category_id, 10);
-    }   
+    }
 
     const query = `
       WITH JobCounts AS (
           SELECT 
-              COALESCE(s.name, 'Grand Total') AS sub_category_name, 
+              s.name AS sub_category_name,
               COUNT(jc.job_id) AS total_jobs
           FROM classification jc
           INNER JOIN sub_category s ON jc.sub_category_id = s.sub_category_id
           WHERE ($1::INTEGER IS NULL OR s.sub_category_id = $1::INTEGER)
 
-          GROUP BY GROUPING SETS ((s.name), ()) 
+          GROUP BY s.name
       )
-      SELECT 
+     	SELECT 
           sub_category_name,
           total_jobs
       FROM JobCounts
       ORDER BY total_jobs DESC NULLS LAST;
     `;
 
-    const values = [sub_category_id]; 
+    const values = [sub_category_id];
 
     const result = await database.query(query, values);
 
+    let total = 0;
+    for (let i = 0; i < result.rows.length; i++) {
+      total  += Number(result.rows[i].total_jobs);
+      
+    }
+
     if (result.rowCount === 0) {
-      return res.status(404).json({ success: false, errormessage: `Data not found` });
+      return res
+        .status(404)
+        .json({ success: false, errormessage: `Data not found` });
     } else {
       return res.json({
         success: true,
-        count: result.rows.length,
+        countObj: result.rows.length,
+        total: total,
         data: result.rows,
       });
     }
@@ -246,6 +262,7 @@ export async function jobRatioBySubcategory(req, res) {
   }
 }
 
+
 export async function jobRatioByType(req, res) {
   console.log("query", req.query);
   console.log("query length ", Object.keys(req.query).length);
@@ -254,7 +271,7 @@ export async function jobRatioByType(req, res) {
   );
 
   try {
-    let type; // Full time, Contract/Temp, Contract/Temp, Part time, asual/Vacation
+    let type; // Full time, Contract/Temp, Contract/Temp, Part time, Casual/Vacation
 
     // ถ้า req.query เป็น {} (ไม่มีการส่งค่า query มาเลย) ให้กำหนด type เป็น null
     if (Object.keys(req.query).length === 0) {
@@ -271,13 +288,13 @@ export async function jobRatioByType(req, res) {
     const query = `
       WITH JobCounts AS (
           SELECT 
-              COALESCE(jb.type, 'Grand Total') AS type, 
+              jb.type AS type, 
               COUNT(jc.job_id) AS total_jobs
           FROM classification jc
           INNER JOIN sub_category s ON jc.sub_category_id = s.sub_category_id
           INNER JOIN basicinfo jb ON jc.job_id = jb.job_id
-          WHERE ($1::VARCHAR  IS NULL OR jb.type ILIKE $1::VARCHAR)  
-          GROUP BY GROUPING SETS ((jb.type), ())
+          WHERE ($1::VARCHAR  IS NULL OR jb.type ILIKE CONCAT('%', $1::VARCHAR, '%'))  
+          GROUP BY jb.type
       )
       SELECT 
           type,
@@ -289,11 +306,19 @@ export async function jobRatioByType(req, res) {
     const values = [type]; 
     const result = await database.query(query, values);
 
+    let total = 0;
+    for (let i = 0; i < result.rows.length; i++) {
+      total  += Number(result.rows[i].total_jobs);
+      
+    }
+
     if (result.rowCount === 0) {
       return res.status(404).json({ success: false, errormessage: `Data not found` });
     } else {
       return res.json({
         success: true,
+        countObj: result.rows.length,
+        total: total,
         data: result.rows,
       });
     }
@@ -370,8 +395,8 @@ export async function jobRatioByLocation(req, res) {
     const query = `
       WITH JobCounts AS (
           SELECT
-              COALESCE(area, 'Unknown') AS area,  
-              COALESCE(city, 'Unknown') AS city,  
+              area AS area,  
+              city AS city,  
           COALESCE(country, 'Unknown') AS country,  
               COUNT(job_id) AS total_jobs
           FROM location
@@ -394,11 +419,19 @@ export async function jobRatioByLocation(req, res) {
     const values = [city]; 
     const result = await database.query(query, values);    
 
+    let total = 0;
+    for (let i = 0; i < result.rows.length; i++) {
+      total  += Number(result.rows[i].total_jobs);
+      
+    }
+
     if (result.rowCount === 0) {
       return res.status(404).json({ success: false, errormessage: `Data not found` });
     } else {
       return res.json({
         success: true,
+        countObj: result.rows.length,
+        total: total,
         data: result.rows,
       });
     }
