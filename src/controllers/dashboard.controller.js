@@ -13,7 +13,7 @@ export async function topSkillByPost(req, res) {
       text: `
         SELECT 
             js."skill_name",
-            COUNT(j."job_id") AS job_count
+            COUNT(j."job_id")::INTEGER AS job_count
         FROM "jobs" j
         JOIN salary s ON s."job_id" = j."job_id"
         JOIN basicInfo b ON b."job_id" = j."job_id"
@@ -54,7 +54,7 @@ export async function avgSalary(req, res) {
     const city = req.query.city === undefined ? null : req.query.city;
     //#region query
     const query = `
-        SELECT MIN(max_salary) AS min_salary, MAX(max_salary) AS max_salary, ROUND(AVG(max_salary), 2) AS avg_salary
+        SELECT MIN(max_salary)::FLOAT AS min_salary, MAX(max_salary)::FLOAT AS max_salary, ROUND(AVG(max_salary)::numeric, 2)::FLOAT AS avg_salary
         FROM
         (
           WITH vars AS(
