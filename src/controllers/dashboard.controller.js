@@ -127,7 +127,7 @@ export async function avgSalary(req, res) {
           AND currency = 'THB'
           AND period = 'monthly'
           AND (vars.city IS NULL OR lo.city ILIKE vars.city)
-          ORDER BY bi.posted_date DESC ,sa.min_salary DESC, sa.max_salary DESC, c.name
+          ORDER BY bi.posted_date DESC, sa.min_salary DESC, sa.max_salary DESC, c.name
         )
       `;
     //#endregion query

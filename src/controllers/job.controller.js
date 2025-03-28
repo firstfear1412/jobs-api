@@ -5,13 +5,14 @@ export async function searchJob(req, res) {
   console.log(`POST /searchJob is requested`);
   try {
     const {
-      search = "",
-      location = "",
+      search = null,
+      location = null,
       main_category = null,
       sub_category = null,
       type = null,
       min_salary = null,
       max_salary = null,
+      day = null,
     } = req.body;
     //#region query
     const query = `
@@ -23,7 +24,8 @@ export async function searchJob(req, res) {
           $4::text AS sub_category,
           $5::text AS type,
           $6::numeric AS min_salary,
-          $7::numeric AS max_salary
+          $7::numeric AS max_salary,
+		      $8::int AS day
       )
       SELECT j.job_id, 
         j.company_id,
@@ -38,8 +40,8 @@ export async function searchJob(req, res) {
         bi.type,
         csf.main_category AS main_category,
         csf.sub_category AS sub_category,
-        sa.min_salary,
-        sa.max_salary,
+        sa.min_salary::FLOAT,
+        sa.max_salary::FLOAT,
         sa.currency,
         sa.period,
         bi.status,
@@ -107,14 +109,16 @@ export async function searchJob(req, res) {
       ON csf.job_id = j.job_id
       CROSS JOIN vars
       WHERE 
-        (
-          c.name ILIKE '%' || vars.search || '%'
-          OR c.short_name ILIKE '%' || vars.search || '%'
-          OR bi.title ILIKE '%' || vars.search || '%'
+          (vars.search IS NULL OR 
+              (
+                c.name ILIKE '%' || vars.search || '%'
+                OR c.short_name ILIKE '%' || vars.search || '%'
+                OR bi.title ILIKE '%' || vars.search || '%'
+              )
         )
         AND
         (
-          vars.location = '' OR
+          vars.location IS NULL OR
           (
             (lo.area IS NOT NULL AND lo.area ILIKE '%' || vars.location || '%')
             OR (lo.city IS NOT NULL AND lo.city ILIKE '%' || vars.location || '%')
@@ -143,6 +147,7 @@ export async function searchJob(req, res) {
         )
         AND (vars.main_category IS NULL OR (csf.main_category IS NOT NULL AND csf.main_category ILIKE '%' || vars.main_category || '%'))
         AND (vars.sub_category IS NULL OR (csf.sub_category IS NOT NULL AND csf.sub_category ILIKE '%' || vars.sub_category || '%'))
+        AND (vars.day IS NULL OR (bi.posted_date >= CURRENT_DATE - INTERVAL '1 day' * vars.day))
       ORDER BY rank_search, rank_location, bi.posted_date DESC, c.short_name, c.name
     `;
     //#endregion query
@@ -155,6 +160,7 @@ export async function searchJob(req, res) {
       type,
       min_salary,
       max_salary,
+      day,
     ];
 
     const result = await database.query(query, values);
@@ -163,10 +169,47 @@ export async function searchJob(req, res) {
         .status(404)
         .json({ success: false, errormessage: `Data not found` });
     } else {
+      const data = result.rows.map((row) => ({
+        job_id: row.job_id,
+        company: {
+          id: row.company_id,
+          name: row.company_name,
+          shortName: row.short_name,
+          industry: row.industry,
+          size: row.company_size,
+        },
+        location: {
+          area: row.area,
+          city: row.city,
+        },
+        basicInfo: {
+          title: row.title,
+          type: row.type,
+          postedDate: row.posted_date,
+        },
+        classification: {
+          mainCategory: row.main_category,
+          subCategory: row.sub_category,
+        },
+        salary: {
+          minSalary: row.min_salary,
+          maxSalary: row.max_salary,
+          currency: row.currency,
+          period: row.period,
+        },
+        status: row.status,
+        content: row.content,
+        skill: {
+          hardSkill: row.hard_skills,
+          softSkill: row.soft_skills,
+        },
+        rankSearch: row.rank_search,
+        rankLocation: row.rank_location,
+      }));
       return res.json({
         success: true,
         count: result.rows.length,
-        data: result.rows,
+        data: data,
       });
     }
   } catch (e) {

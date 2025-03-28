@@ -179,46 +179,15 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                search:
-                  type: string
-                  description: "Keyword to search in company name, short name, or job title"
-                  example: ".NET"
-                location:
-                  type: string
-                  description: "Search location (city or area)"
-                  example: "Bangkok"
-                main_category:
-                  type: string
-                  nullable: true
-                  description: "Main category of the job"
-                  example: "Information & Communication Technology"
-                sub_category:
-                  type: string
-                  nullable: true
-                  description: "Sub-category of the job"
-                  example: "Developers/Programmers"
-                type:
-                  type: string
-                  nullable: true
-                  description: "Job type (e.g., Part time, Full time, Contract/Temp, Casual/Vacation)"
-                  example: null
-                min_salary:
-                  type: number
-                  format: float
-                  nullable: true
-                  description: "Minimum salary filter"
-                  example: 100000
-                max_salary:
-                  type: number
-                  format: float
-                  nullable: true
-                  description: "Maximum salary filter"
-                  example: 200000
+              $ref: "#/components/schemas/jobSearchRequest"
       responses:
         200:
           description: "A list of jobs"
+          content:
+            application/json:
+              schema:
+                # อ้างอิงไปที่ Component เพื่อแสดงรายละเอียด
+                $ref: "#/components/schemas/jobSearch"
         400:
           description: "Invalid request"
         404:
@@ -486,6 +455,132 @@ components:
           type: number
           nullable: true
     #Ter
+    jobSearch:
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              job_id:
+                type: integer
+              company:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  shortName:
+                    type: string
+                    nullable: true
+                  industry:
+                    type: string
+                    nullable: true
+                  size:
+                    type: string
+                    nullable: true
+              location:
+                type: object
+                properties:
+                  area:
+                    type: string
+                    nullable: true
+                  city:
+                    type: string
+              basicInfo:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  type:
+                    type: string
+                  postedDate:
+                    type: string
+                    format: date-time
+              classification:
+                type: object
+                properties:
+                  mainCategory:
+                    type: string
+                  subCategory:
+                    type: string
+              salary:
+                type: object
+                properties:
+                  minSalary:
+                    type: number
+                  maxSalary:
+                    type: number
+                  currency:
+                    type: string
+                  period:
+                    type: string
+              status:
+                type: string
+              content:
+                type: string
+              skill:
+                type: object
+                properties:
+                  hardSkill:
+                    type: array
+                    items:
+                      type: string
+                  softSkill:
+                    type: array
+                    items:
+                      type: string
+              rankSearch:
+                type: integer
+              rankLocation:
+                type: integer
+    jobSearchRequest:
+      type: object
+      properties:
+        search:
+          type: string
+          description: "Keyword to search in company name, short name, or job title"
+          example: ".NET"
+        location:
+          type: string
+          description: "Search location (city or area)"
+          example: "Bangkok"
+        main_category:
+          type: string
+          nullable: true
+          description: "Main category of the job"
+          example: "Information & Communication Technology"
+        sub_category:
+          type: string
+          nullable: true
+          description: "Sub-category of the job"
+          example: "Developers/Programmers"
+        type:
+          type: string
+          nullable: true
+          description: "Job type (e.g., Part time, Full time, Contract/Temp, Casual/Vacation)"
+          example: null
+        min_salary:
+          type: number
+          format: float
+          nullable: true
+          description: "Minimum salary filter"
+          example: 100000
+        max_salary:
+          type: number
+          format: float
+          nullable: true
+          description: "Maximum salary filter"
+          example: 200000
+        day:
+          type: number
+          nullable: true
+          description: "Number of days for filtering jobs"
+          example: 37
     dashboardTopSkill:
       allOf:
         - $ref: "#/components/schemas/masterResponse"
