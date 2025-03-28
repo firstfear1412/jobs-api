@@ -236,30 +236,6 @@ paths:
             type: integer
             example: 6287
       responses:
-        # "200":
-        #   description: Successfully retrieved job ratio by subcategory
-        #   content:
-        #     application/json:
-        #       schema:
-        #         type: object
-        #         properties:
-        #           success:
-        #             type: boolean
-        #             example: true
-        #           count:
-        #             type: integer
-        #             example: 5
-        #           data:
-        #             type: array
-        #             items:
-        #               type: object
-        #               properties:
-        #                 sub_category_name:
-        #                   type: string
-        #                   example: "Software Development"
-        #                 total_jobs:
-        #                   type: integer
-        #                   example: 150
         "200":
           description: Successfully retrieved job ratio by subcategory
           content:
@@ -267,7 +243,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/dashboardJobRatioBySubcategory"
 
-     
         "400":
           description: Bad request due to missing or invalid query parameters
           content:
@@ -311,14 +286,14 @@ paths:
   /dashboard/jobRatioByType:
     get:
       summary: Get job ratio by job type
-      description: Retrieve the number of jobs categorized by job type (e.g., Full-time, Part-time, Contract, etc.).
+      description: Retrieve the number of jobs categorized by job type (e.g., Full time, Contract/Temp, Contract/Temp, Part time, Casual/Vacation, etc.). 
       tags:
         - dashboard
       parameters:
         - in: query
           name: type
           required: false
-          description: The job type to filter by (e.g., Full-time, Part-time, Contract). If not provided, returns the Grand Total.
+          description: The job type to filter by (e.g., Full time, Contract/Temp, Contract/Temp, Part time, Casual/Vacation). If not provided, returns the Grand Total.
           schema:
             type: string
             example: "Full time"
@@ -328,22 +303,8 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        type:
-                          type: string
-                          example: "Full-time"
-                        total_jobs:
-                          type: integer
-                          example: 250
+                $ref: "#/components/schemas/dashboardJobRatioByType"
+
         "400":
           description: Bad request due to missing or invalid query parameters
           content:
@@ -404,28 +365,8 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        area:
-                          type: string
-                          example: "Central"
-                        city:
-                          type: string
-                          example: "Bangkok"
-                        country:
-                          type: string
-                          example: "Thailand"
-                        total_jobs:
-                          type: integer
-                          example: 120
+                $ref: "#/components/schemas/dashboardJobRatioByLocation"
+
         "400":
           description: Bad request due to missing or invalid query parameters
           content:
@@ -480,29 +421,15 @@ paths:
           schema:
             type: integer
             minimum: 1
-            example: 30
+            example: 100
       responses:
         "200":
           description: Successfully retrieved job count within the specified date range
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "The total number of job postings in the past 7 days."
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        total_jobs:
-                          type: integer
-                          example: 350
+                $ref: "#/components/schemas/dashboardJobCountByDate"
+
         "400":
           description: Bad request due to missing or invalid path parameter
           content:
@@ -589,12 +516,13 @@ components:
         - type: object
       properties:
         data:
-          type: object
-          properties:
-            sub_category_name:
-              type: string
-            total_jobs:
-              type: integer
+          type: array
+          items:
+            properties:
+              type:
+                type: string
+              total_jobs:
+                type: integer
 
     dashboardJobRatioByLocation:
       allOf:
@@ -602,28 +530,31 @@ components:
         - type: object
       properties:
         data:
-          type: object
-          properties:
-            area:
-              type: string
-            city:
-              type: string
-            country:
-              type: string
-            total_jobs:
-              type: integer
+          type: array
+          items:
+            properties:
+              area:
+                type: string
+              city:
+                type: string
+              country:
+                type: string
+              total_jobs:
+                type: integer
 
     dashboardJobCountByDate:
-      allOf:
-        - $ref: "#/components/schemas/masterResponse"
-        - type: object
+      type: object
       properties:
-        data:
-          type: object
-          properties:
-            total_jobs:
-              type: integer
+        success:
+          type: boolean
+        message:
+          type: string
+        data: 
+          type: array
+          items:
+            properties:
+              total_jobs:
+                type: integer
+        
       
-
-
-    #Max
+#Max
