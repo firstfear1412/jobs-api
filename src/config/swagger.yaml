@@ -99,7 +99,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/topSelectSalary"
+              $ref: "#/components/schemas/jobByMaxSalaryNjobByMinSalary"
       responses:
         200:
           description: "Successful response with job data based on the minimum salary."
