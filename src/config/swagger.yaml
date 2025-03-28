@@ -236,30 +236,38 @@ paths:
             type: integer
             example: 6287
       responses:
+        # "200":
+        #   description: Successfully retrieved job ratio by subcategory
+        #   content:
+        #     application/json:
+        #       schema:
+        #         type: object
+        #         properties:
+        #           success:
+        #             type: boolean
+        #             example: true
+        #           count:
+        #             type: integer
+        #             example: 5
+        #           data:
+        #             type: array
+        #             items:
+        #               type: object
+        #               properties:
+        #                 sub_category_name:
+        #                   type: string
+        #                   example: "Software Development"
+        #                 total_jobs:
+        #                   type: integer
+        #                   example: 150
         "200":
           description: Successfully retrieved job ratio by subcategory
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  count:
-                    type: integer
-                    example: 5
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        sub_category_name:
-                          type: string
-                          example: "Software Development"
-                        total_jobs:
-                          type: integer
-                          example: 150
+                $ref: "#/components/schemas/dashboardJobRatioBySubcategory"
+
+     
         "400":
           description: Bad request due to missing or invalid query parameters
           content:
@@ -567,10 +575,55 @@ components:
         - type: object
       properties:
         data:
+          type: array
+          items:
+            properties:
+              sub_category_name:
+                type: string
+              total_jobs:
+                type: integer
+
+    dashboardJobRatioByType:
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
+      properties:
+        data:
           type: object
           properties:
             sub_category_name:
               type: string
             total_jobs:
-              type: number
+              type: integer
+
+    dashboardJobRatioByLocation:
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            area:
+              type: string
+            city:
+              type: string
+            country:
+              type: string
+            total_jobs:
+              type: integer
+
+    dashboardJobCountByDate:
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            total_jobs:
+              type: integer
+      
+
+
     #Max
