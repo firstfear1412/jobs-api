@@ -4,15 +4,21 @@ import * as dashboardC from "../controllers/dashboard.controller.js";
 const router = express.Router();
 
 router.get("/topSkillByPost/:type", dashboardC.topSkillByPost);
-router.get("/jobByRangeSalary", dashboardC.jobByRangeSalary);
-// router.get("/topSkillByPost", dashboardC.topSkillByPost);
-// router.post("/", dashboardC.createUser);
+router.get("/avgSalary", dashboardC.avgSalary);
+
+//max
+router.post("/jobByStatus", dashboardC.jobByStatus);
+router.post("/jobByMaxSalary", dashboardC.jobByMaxSalary);
+router.post("/jobByMinSalary", dashboardC.jobByMinSalary);
+router.get("/jobByIndustry", dashboardC.jobByIndustry);
+router.get("/jobByIndustry/:industry", dashboardC.jobByIndustry);
+router.get("/jobByCompanySize", dashboardC.jobBycompanySize);
+router.get("/jobByCompanySize/:companySize", dashboardC.jobBycompanySize);
 
 // art
 router.get("/jobRatioBySubcategory", dashboardC.jobRatioBySubcategory);
 router.get("/jobRatioByType", dashboardC.jobRatioByType);
 router.get("/jobRatioBylocation", dashboardC.jobRatioByLocation);
 router.get("/jobCountByDate/:day", dashboardC.jobCountByDate);
-
 
 export default router;

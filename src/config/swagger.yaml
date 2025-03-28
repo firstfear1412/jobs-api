@@ -15,42 +15,155 @@ paths:
       parameters:
         - name: "type"
           in: "path"
-          description: "The type of skill to fetch"
+          description: "The type of skill to fetch (e.g., 'hard_skill', 'soft_skill')"
           required: true
           type: "string"
       responses:
         200:
           description: "A list of skills with job count"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  # อ้างอิงไปที่ Component เพื่อแสดงรายละเอียด
+                  $ref: "#/components/schemas/dashboardTopSkill"
         400:
           description: "Invalid type parameter"
         404:
           description: "Data not found"
-  /dashboard/jobByRangeSalary:
+  /dashboard/avgSalary:
     get:
-      summary: "Get jobs by salary range"
+      summary: "Get min, max, average salary of all jobs by city"
       tags:
         - "dashboard"
       parameters:
-        - name: "min"
+        - name: "city"
           in: "query"
-          description: "Minimum salary"
-          required: true
+          description: "city to filter job salary"
           schema:
-            type: "number"
-            format: "float"
-            nullable: true
-        - name: "max"
-          in: "query"
-          description: "Maximum salary"
-          required: true
-          schema:
-            format: "float"
+            type: "string"
+            format: "string"
             nullable: true
       responses:
         200:
-          description: "A list of jobs"
+          description: "A result min, max, and average salary of max salary"
+        404:
+          description: "Data not found"
+  /dashboard/jobByStatus:
+    post:
+      summary: Get job information by status or count jobs if no status provided.
+      description: |
+        - If status is provided, returns detailed job information.
+        - If no status is provided (or status is null), returns the count of jobs by status.
+      tags:
+        - "dashboard"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/jobByStatus"
+      responses:
+        200:
+          description: "A list of Status with job count"
         400:
-          description: "Invalid salary range"
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+
+  /dashboard/jobByMaxSalary:
+    post:
+      summary: Get job information with the highest salary by subcategory.
+      description: |
+        - If no subcategory name is provided, this API returns the jobs with the highest salary by subcategory.
+        - If a subcategory name is provided, it returns jobs in that subcategory with the highest salary.
+      tags:
+        - "dashboard"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/jobByMaxSalaryNjobByMinSalary"
+      responses:
+        200:
+          description: "Successful response with job data based on the maximum salary."
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+  /dashboard/jobByMinSalary:
+    post:
+      summary: "Get job information with the lowest salary by subcategory."
+      description: |
+        - If no subcategory name is provided, this API returns the jobs with the lowest salary by subcategory.
+        - If a subcategory name is provided, it returns jobs in that subcategory with the lowest salary.
+      tags:
+        - "dashboard"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/jobByMaxSalaryNjobByMinSalary"
+      responses:
+        200:
+          description: "Successful response with job data based on the minimum salary."
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+  /dashboard/jobByIndustry:
+    get:
+      summary: "Get job count by industry"
+      tags:
+        - "dashboard"
+      responses:
+        200:
+          description: "A list of Status with job count"
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+  /dashboard/jobByIndustry/{industry}:
+    get:
+      summary: "Get job list by Industry"
+      tags:
+        - "dashboard"
+      parameters:
+        - $ref: "#/components/schemas/jobByIndustry"
+      responses:
+        200:
+          description: "A list of jobs filtered by the industry or jobs with no specified industry"
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+  /dashboard/jobByCompanySize:
+    get:
+      summary: "Get job count by Compony Size"
+      tags:
+        - "dashboard"
+      responses:
+        200:
+          description: "A list of Compony Size with job count"
+        400:
+          description: "Invalid type parameter"
+        404:
+          description: "Data not found"
+  /dashboard/jobByCompanySize/{companySize}:
+    get:
+      summary: "Get list job by compony size"
+      tags:
+        - "dashboard"
+      parameters:
+        - $ref: "#/components/schemas/jobByCompanySize"
+      responses:
+        200:
+          description: "A list of jobs filtered by the compony size or jobs with no specified compony size"
+        400:
+          description: "Invalid type parameter"
         404:
           description: "Data not found"
   /job/search:
@@ -108,23 +221,6 @@ paths:
         404:
           description: "Data not found"
 
-  /job/search/subcatagory/{sub_category_id}:
-    get:
-      summary: "Get jobs by subcatagory id"
-      tags:
-        - "job"
-      parameters:
-        - name: "sub_category_id"
-          in: "path"
-          description: "The sub_category_id of the job"
-          required: true
-          type: "integer"
-      responses:
-        200:
-          description: "A list of jobs"
-        404:
-          description: "Data not found"  
-
   /dashboard/jobRatioBySubcategory:
     get:
       summary: Get job ratio by subcategory
@@ -140,7 +236,7 @@ paths:
             type: integer
             example: 6287
       responses:
-        '200':
+        "200":
           description: Successfully retrieved job ratio by subcategory
           content:
             application/json:
@@ -164,7 +260,7 @@ paths:
                         total_jobs:
                           type: integer
                           example: 150
-        '400':
+        "400":
           description: Bad request due to missing or invalid query parameters
           content:
             application/json:
@@ -177,7 +273,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Status type is required: sub_category_id is missing or empty"
-        '404':
+        "404":
           description: No data found for the provided subcategory ID
           content:
             application/json:
@@ -190,7 +286,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Data not found"
-        '500':
+        "500":
           description: Internal server error when processing the request
           content:
             application/json:
@@ -219,7 +315,7 @@ paths:
             type: string
             example: "Full time"
       responses:
-        '200':
+        "200":
           description: Successfully retrieved job ratio by type
           content:
             application/json:
@@ -240,7 +336,7 @@ paths:
                         total_jobs:
                           type: integer
                           example: 250
-        '400':
+        "400":
           description: Bad request due to missing or invalid query parameters
           content:
             application/json:
@@ -253,7 +349,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Status type is required: type is missing or empty"
-        '404':
+        "404":
           description: No data found for the provided job type
           content:
             application/json:
@@ -266,7 +362,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Data not found"
-        '500':
+        "500":
           description: Internal server error when processing the request
           content:
             application/json:
@@ -295,7 +391,7 @@ paths:
             type: string
             example: "Bangkok"
       responses:
-        '200':
+        "200":
           description: Successfully retrieved job ratio by location
           content:
             application/json:
@@ -322,7 +418,7 @@ paths:
                         total_jobs:
                           type: integer
                           example: 120
-        '400':
+        "400":
           description: Bad request due to missing or invalid query parameters
           content:
             application/json:
@@ -335,7 +431,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Status city is required: city is missing or empty"
-        '404':
+        "404":
           description: No data found for the provided city
           content:
             application/json:
@@ -348,7 +444,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Data not found"
-        '500':
+        "500":
           description: Internal server error when processing the request
           content:
             application/json:
@@ -378,7 +474,7 @@ paths:
             minimum: 1
             example: 30
       responses:
-        '200':
+        "200":
           description: Successfully retrieved job count within the specified date range
           content:
             application/json:
@@ -399,7 +495,7 @@ paths:
                         total_jobs:
                           type: integer
                           example: 350
-        '400':
+        "400":
           description: Bad request due to missing or invalid path parameter
           content:
             application/json:
@@ -412,7 +508,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Invalid day parameter. Please provide a valid positive number."
-        '404':
+        "404":
           description: No job postings found in the specified date range
           content:
             application/json:
@@ -425,7 +521,7 @@ paths:
                   errormessage:
                     type: string
                     example: "Data not found"
-        '500':
+        "500":
           description: Internal server error when processing the request
           content:
             application/json:
@@ -441,109 +537,40 @@ paths:
 
 components:
   schemas:
-    basicinfo:
+    masterResponse:
       type: object
       properties:
-        job_id:
+        success:
+          type: boolean
+        countObj:
           type: number
-        title:
-          type: string
-        type:
-          type: string
-        status:
-          type: string
-        posted_date:
-          type: string
-          format: date-time
-        expiry_date:
-          type: string
-          format: date-time
-    classification:
-      type: object
+        total:
+          type: number
+          nullable: true
+    #Ter
+    dashboardTopSkill:
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
       properties:
-        job_id:
-          type: number
-        main_category_id:
-          type: number
-        sub_category_id:
-          type: number
-    company:
-      type: object
+        data:
+          type: object
+          properties:
+            skill_name:
+              type: string
+            sumJobCount:
+              type: number
+    #Art
+    dashboardJobRatioBySubcategory:
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
       properties:
-        company_id:
-          type: number
-        name:
-          type: string
-        short_name:
-          type: string
-        industry:
-          type: string
-        verified:
-          type: number
-        company_search_url:
-          type: string
-        registration_date:
-          type: string
-          format: date-time
-        company_size:
-          type: string
-    jobs:
-      type: object
-      properties:
-        job_id:
-          type: number
-        company_id:
-          type: number
-        content:
-          type: string
-        share_link:
-          type: string
-    jobs_skill:
-      type: object
-      properties:
-        job_id:
-          type: number
-        skill_name:
-          type: string
-        skill_type:
-          type: string
-    location:
-      type: object
-      properties:
-        job_id:
-          type: number
-        area:
-          type: string
-        city:
-          type: string
-        country:
-          type: string
-    main_category:
-      type: object
-      properties:
-        main_category_id:
-          type: number
-        name:
-          type: string
-    salary:
-      type: object
-      properties:
-        job_id:
-          type: number
-        min_salary:
-          type: number
-        max_salary:
-          type: number
-        currency:
-          type: string
-        period:
-          type: string
-        has_salary_info:
-          type: number
-    sub_category:
-      type: object
-      properties:
-        sub_category_id:
-          type: number
-        name:
-          type: string
+        data:
+          type: object
+          properties:
+            sub_category_name:
+              type: string
+            total_jobs:
+              type: number
+    #Max
