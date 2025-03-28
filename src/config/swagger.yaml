@@ -101,7 +101,7 @@ paths:
             application/json:
               schema:
                 anyOf:
-                  - $ref: "#/components/schemas/dashboardjobByMaxSalary"
+                  # - $ref: "#/components/schemas/dashboardjobByMaxSalary"
                   - $ref: "#/components/schemas/dashboardCompanyListJobByMaxSalaryResponse"
         400:
           description: "Invalid type parameter"
@@ -128,7 +128,7 @@ paths:
             application/json:
               schema:
                 anyOf:
-                  - $ref: "#/components/schemas/dashboardjobByMinSalary"
+                  # - $ref: "#/components/schemas/dashboardjobByMinSalary"
                   - $ref: "#/components/schemas/dashboardCompanyListJobMinSalaryResponse"
         400:
           description: "Invalid type parameter"
@@ -160,10 +160,10 @@ paths:
           in: path
           required: true
           schema:
-          type: string
-          description: |
-            Industry of the job. If not provided, all industries will be included.
-            If you want to filter jobs with no specified industry, set the value to `null`.
+            type: string
+            description: |
+              Industry of the job. If not provided, all industries will be included.
+              If you want to filter jobs with no specified industry, set the value to `null`.
       responses:
         200:
           description: "A list of jobs filtered by the industry or jobs with no specified industry"
@@ -201,10 +201,10 @@ paths:
           in: path
           required: true
           schema:
-          type: string
-          description: |
-            Company size of the job. If not provided, all company sizes will be included.
-            If you want to filter jobs with no specified company size, set the value to `null`.
+            type: string
+            description: |
+              Company size of the job. If not provided, all company sizes will be included.
+              If you want to filter jobs with no specified company size, set the value to `null`.
       responses:
         200:
           description: "A list of jobs filtered by the compony size or jobs with no specified compony size"
@@ -850,57 +850,80 @@ components:
                 type: integer
                 description: "The total number of jobs available for that company size"
     dashboardjobByMaxSalary:
-      type: object
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
       properties:
-        sub_category_id:
-          type: integer
-        sub_category_name:
-          type: string
-        max_salary:
-          type: string
+        data:
+          type: array
+          items:
+            properties:
+              sub_category_id:
+                type: integer
+              sub_category_name:
+                type: string
+              max_salary:
+                type: string
 
     dashboardCompanyListJobByMaxSalaryResponse:
-      type: object
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
       properties:
-        company_id:
-          type: integer
-        company_name:
-          type: string
-        short_name:
-          type: string
-        industry:
-          type: string
-        company_size:
-          type: string
-        max_salary:
-          type: string
+        data:
+          type: array
+          items:
+            properties:
+              company_id:
+                type: integer
+              company_name:
+                type: string
+              short_name:
+                type: string
+              industry:
+                type: string
+              company_size:
+                type: string
+              max_salary:
+                type: string
     dashboardjobByMinSalary:
-      type: object
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
       properties:
-        sub_category_id:
-          type: integer
-        sub_category_name:
-          type: string
-        min_salary:
-          type: string
-
+        data:
+          type: array
+          items:
+            properties:
+              sub_category_id:
+                type: integer
+              sub_category_name:
+                type: string
+              min_salary:
+                type: string
     dashboardCompanyListJobMinSalaryResponse:
-      type: object
+      allOf:
+        - $ref: "#/components/schemas/masterResponse"
+        - type: object
       properties:
-        company_id:
-          type: integer
-        company_name:
-          type: string
-        short_name:
-          type: string
-        industry:
-          type: string
-        company_size:
-          type: string
-        job_name:
-          type: string
-        min_salary:
-          type: string
+        data:
+          type: array
+          items:
+            properties:
+              company_id:
+                type: integer
+              company_name:
+                type: string
+              short_name:
+                type: string
+              industry:
+                type: string
+              company_size:
+                type: string
+              job_name:
+                type: string
+              min_salary:
+                type: string
     dashboardjobListResponse:
       allOf:
         - $ref: "#/components/schemas/masterResponse"
