@@ -952,7 +952,7 @@ export async function jobRatioBySubcategory(req, res) {
       WITH JobCounts AS (
           SELECT 
               s.name AS sub_category_name,
-              COUNT(jc.job_id) AS total_jobs
+              COUNT(jc.job_id)::INTEGER AS total_jobs
           FROM classification jc
           INNER JOIN sub_category s ON jc.sub_category_id = s.sub_category_id
           WHERE ($1::INTEGER IS NULL OR s.sub_category_id = $1::INTEGER)
@@ -1021,7 +1021,8 @@ export async function jobRatioByType(req, res) {
       WITH JobCounts AS (
           SELECT 
               jb.type AS type, 
-              COUNT(jc.job_id) AS total_jobs
+              -- COUNT(jc.job_id) 
+              COUNT(jc.job_id)::INTEGER AS total_jobs
           FROM classification jc
           INNER JOIN sub_category s ON jc.sub_category_id = s.sub_category_id
           INNER JOIN basicinfo jb ON jc.job_id = jb.job_id
@@ -1080,7 +1081,7 @@ export async function jobCountByDate(req, res) {
     }
 
     const query = `
-      SELECT COUNT(jb.job_id) AS total_jobs
+      SELECT  COUNT(job_id)::INTEGER AS total_jobs
       FROM basicinfo jb
       WHERE posted_date >= NOW() - INTERVAL '${day} days'
     `;
@@ -1131,8 +1132,9 @@ export async function jobRatioByLocation(req, res) {
           SELECT
               area AS area,  
               city AS city,  
-          COALESCE(country, 'Unknown') AS country,  
-              COUNT(job_id) AS total_jobs
+              country AS country,  
+              -- COUNT(job_id) AS total_jobs
+              COUNT(job_id)::INTEGER AS total_jobs
           FROM location
           WHERE ($1::VARCHAR  IS NULL OR city ILIKE $1::VARCHAR)  
           GROUP BY area, country, city
@@ -1152,6 +1154,8 @@ export async function jobRatioByLocation(req, res) {
 
     const values = [city];
     const result = await database.query(query, values);
+
+    console.log(result.rows)
 
     let total = 0;
     for (let i = 0; i < result.rows.length; i++) {
@@ -1176,3 +1180,6 @@ export async function jobRatioByLocation(req, res) {
     return res.status(500).json({ success: false, errormessage: e.message });
   }
 }
+
+
+// พีรพล
